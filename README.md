@@ -41,6 +41,17 @@ Every exciting choice raises the number of things that will go wrong once the
 curtain is up. The thrilling bill is literally the dangerous one, and you watch
 yourself overreach while you are doing it.
 
+## Starting
+
+The page opens on a closed curtain: two halves of velvet, the title between
+them, and one button. Pressing **Take the Alhambra** parts them, and the board
+is already behind it — nothing loads and nothing waits.
+
+The curtain is drawn entirely in CSS. A photograph would be one more thing to
+fetch on a phone signal, and a repeating gradient makes a better velvet fold
+than a JPEG at that size. Anyone who has asked their phone for less motion gets
+the house without the flourish.
+
 ## The phases
 
 A production is one sitting, about four minutes. Each phase asks a question

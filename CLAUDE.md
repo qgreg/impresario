@@ -182,6 +182,17 @@ separate bugs have come from this — "his own line" on Mrs. Siddons-Blake, and
 "The Wexford Boy has frozen. Stay with her." `night.test.js` greps the cue and
 failure lines for gendered pronouns; keep that check green.
 
+**The landing page is a curtain, and it is CSS.** No images anywhere in this
+project — a photograph is one more thing to fetch on a phone signal, and the
+velvet is a repeating gradient. The parting is a transition with a `setTimeout`
+fallback, because a transition that never fires (backgrounded tab, some
+reduced-motion implementations) would leave an invisible full-screen element
+lying over the board catching every tap.
+
+**Copy on the curtain sits over mid-red velvet, so it needs its scrim.** Warm
+ink on that ground is muddy at arm's length in daylight. The card carries a
+radial dark scrim behind it; do not remove it to show more of the fold.
+
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.
 

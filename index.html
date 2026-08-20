@@ -10,6 +10,34 @@
 </head>
 <body>
 
+<!-- The house before the house. Two halves of velvet that part on the button,
+     because the first thing a game about the theatre should do is raise a
+     curtain. Everything behind it is inert until they open. -->
+<div id="curtain" class="curtain">
+  <div class="curtain__half curtain__half--left" aria-hidden="true"></div>
+  <div class="curtain__half curtain__half--right" aria-hidden="true"></div>
+  <div class="curtain__swag" aria-hidden="true"></div>
+
+  <div class="curtain__card">
+    <p class="curtain__eyebrow">London, and a great deal of nerve</p>
+    <h1 class="curtain__title">Impresario</h1>
+    <p class="curtain__rule" aria-hidden="true">&#10022;</p>
+
+    <p class="curtain__blurb">
+      A hundred and twenty guineas, a theatre nobody else wants, and a town that
+      will forgive you anything except being dull.
+    </p>
+    <p class="curtain__blurb curtain__blurb--dim">
+      Choose the play. Cast it from people who are vain, drunk, or unheard of.
+      Decide what the audience is allowed to see. Then work the follow spot
+      yourself, and find out what you have made.
+    </p>
+
+    <button id="begin" class="curtain__button" type="button">Take the Alhambra</button>
+    <a class="curtain__aside" href="./spotlight.html">Or just work the lamp a while &rarr;</a>
+  </div>
+</div>
+
 <main id="app">
 
   <header class="standing">

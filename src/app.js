@@ -64,6 +64,8 @@ const el = {
   volatility: document.getElementById('volatility'),
   prompt: document.getElementById('prompt'),
   cards: document.getElementById('cards'),
+  curtain: document.getElementById('curtain'),
+  begin: document.getElementById('begin'),
   night: document.getElementById('night'),
   nightStage: document.getElementById('night-stage'),
   nightCue: document.getElementById('night-cue'),
@@ -819,7 +821,30 @@ function render() {
   paintChoice(bill, casting, production);
 }
 
+/**
+ * The house opens on a closed curtain.
+ *
+ * The game was rendered and immediately playable, which meant a stranger's
+ * first sight of it was a budget and a list of plays with no notion of what any
+ * of it was for. The velvet parts on one button, and the board is already
+ * behind it — nothing loads, nothing waits.
+ */
+function raiseTheCurtain() {
+  el.curtain.classList.add('curtain--open');
+  el.begin.disabled = true;
+  // Taken out of the layout once it has finished parting, so nothing invisible
+  // is left lying over the board catching taps.
+  const done = () => { el.curtain.hidden = true; };
+  el.curtain.addEventListener('transitionend', done, { once: true });
+  // A transition that never fires — a backgrounded tab, reduced motion on some
+  // browsers — must not leave the curtain permanently across the screen.
+  setTimeout(done, 1800);
+}
+
+el.begin.addEventListener('click', raiseTheCurtain);
+
 render();
+
 
 // A window onto the running state, for the console and for tests later.
 // Nothing in the game may depend on it.

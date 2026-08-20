@@ -401,3 +401,165 @@ body {
   color: var(--ash);
 }
 .night__hint[hidden] { display: none; }
+
+/* ------------------------------------------------------------- the curtain */
+
+/*
+ * The landing page is a closed house. Two halves of velvet, a swag across the
+ * top, and the title between them; pressing the button parts them and the game
+ * is already there behind it.
+ *
+ * All of it is drawn in CSS. A photograph of a curtain would be one more thing
+ * to download on a phone signal, and repeating-linear-gradient makes a better
+ * velvet fold than a JPEG at this size anyway.
+ */
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--night);
+}
+.curtain[hidden] { display: none; }
+
+.curtain__half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 52%;
+  /* Broad folds with a bright edge: the highlight is what reads as velvet. */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--curtain-deep) 0,
+      var(--curtain) 3.2%,
+      #8E2A3A 5.4%,
+      var(--curtain) 7.6%,
+      var(--curtain-deep) 11%
+    );
+  box-shadow: inset 0 -12vh 14vh rgba(0, 0, 0, 0.55), inset 0 8vh 10vh rgba(0, 0, 0, 0.4);
+  transition: transform 1500ms cubic-bezier(0.32, 0, 0.2, 1);
+  will-change: transform;
+}
+.curtain__half--left { left: 0; }
+.curtain__half--right { right: 0; }
+
+.curtain__swag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 13vh;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--curtain-deep) 0, var(--curtain) 2.4%, #8E2A3A 4%, var(--curtain) 5.6%, var(--curtain-deep) 8%);
+  border-bottom: 2px solid rgba(201, 151, 63, 0.5);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  transition: transform 1500ms cubic-bezier(0.32, 0, 0.2, 1);
+}
+
+/* The card sits in the gap between the halves, lit from the footlights.
+   The scrim is not decoration: warm ink on a mid-red velvet is muddy at arm's
+   length in daylight, and the copy has to be readable before anyone will care
+   how handsome the curtain is. */
+.curtain__card {
+  position: relative;
+  z-index: 1;
+  max-width: 30rem;
+  padding: 2.4rem 1.6rem 2rem;
+  text-align: center;
+  transition: opacity 500ms ease;
+}
+.curtain__card::before {
+  content: '';
+  position: absolute;
+  inset: -6% -4%;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(20, 16, 14, 0.86) 0%, rgba(20, 16, 14, 0.72) 55%, rgba(20, 16, 14, 0) 100%);
+}
+
+.curtain__eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.curtain__title {
+  margin: 0;
+  font-size: clamp(2.6rem, 15vw, 4rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+  /* Lit from below, like everything else on a stage. */
+  text-shadow: 0 0 30px rgba(232, 163, 61, 0.45), 0 3px 0 rgba(0, 0, 0, 0.7);
+}
+
+.curtain__rule {
+  margin: 0.6rem 0 1.2rem;
+  color: var(--brass);
+  font-size: 0.9rem;
+}
+
+.curtain__blurb {
+  margin: 0 0 0.9rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--cream);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  text-wrap: pretty;
+}
+.curtain__blurb--dim { color: #C7B49A; font-size: 0.92rem; }
+
+.curtain__button {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  margin: 1.5rem 0 0.9rem;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid var(--brass);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(122, 34, 49, 0.9), rgba(74, 20, 29, 0.9));
+  color: var(--cream);
+  font: inherit;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 0 0 rgba(232, 163, 61, 0);
+  animation: houselights 3.4s ease-in-out infinite;
+}
+.curtain__button:active { transform: translateY(1px); }
+
+/* The button breathes like a gas lamp rather than blinking like a web page. */
+@keyframes houselights {
+  0%, 100% { box-shadow: 0 0 14px rgba(232, 163, 61, 0.18); }
+  50% { box-shadow: 0 0 26px rgba(232, 163, 61, 0.42); }
+}
+
+.curtain__aside {
+  display: inline-block;
+  padding: 0.5rem;
+  color: #BBAA92;
+  font-size: 0.84rem;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(154, 139, 118, 0.3);
+}
+
+/* Raised. The halves go further than the screen so no sliver of velvet is left
+   at the edges on a wide phone. */
+.curtain--open .curtain__half--left { transform: translateX(-102%); }
+.curtain--open .curtain__half--right { transform: translateX(102%); }
+.curtain--open .curtain__swag { transform: translateY(-105%); }
+.curtain--open .curtain__card { opacity: 0; transition-duration: 300ms; }
+
+/* Somebody who has asked for less motion gets the house, not the flourish. */
+@media (prefers-reduced-motion: reduce) {
+  .curtain__half,
+  .curtain__swag,
+  .curtain__card { transition-duration: 1ms; }
+  .curtain__button { animation: none; box-shadow: 0 0 18px rgba(232, 163, 61, 0.3); }
+}
