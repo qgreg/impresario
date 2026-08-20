@@ -34,7 +34,10 @@ src/data.js       the content tables: works, treatments, hooks, backers, remarks
 src/bill.js       pure derivation — cost, appeal, volatility, roles, billing
 src/company.js    pure — fit, feuds, salaries, and the backer's imposed string
 src/production.js pure — staging and rehearsal folded over the cast's seeds
-src/notices.js    pure — mishaps, takings, standing, and the reviews
+src/notices.js    pure — takings, standing, and the reviews
+src/night.js      pure — the scene, the crises, and judging each one
+src/openingnight.js  the live stage. A canvas, a clock, a thumb, nothing else
+src/stagepaint.js    boards, figures and beam, shared by the toy and the night
 src/app.js        state, painting, and the step machine for The Bill and casting
 
 spotlight.html    the follow-spot toy, standalone, depends on no other phase
@@ -45,6 +48,7 @@ test/bill.test.js    unit tests, bare Node, no framework
 test/company.test.js the same, for casting
 test/production.test.js  the same, for staging and rehearsal
 test/notices.test.js     the same, for the settlement
+test/night.test.js       the same, for the crises and their judgement
 test/follow.test.js  the same, for the spotlight
 ```
 
@@ -160,6 +164,23 @@ competent impresario the toast of London by week two and emptied the word.
 end up below zero; unclamped, a negative mishap count turned the damage fraction
 into a multiplier and paid out above the gross — money minted from caution. The
 same figure also reached the copy as "0 of the -2 things that could go wrong did".
+
+**A covered trouble does not happen.** Not a milder crisis — no crisis. The
+production phase buys the absence of an event, and if it could only soften one,
+that phase would be a discount rather than a decision. `night.test.js` asserts
+a fully covered cast produces zero crises.
+
+**A number on the board is a promise the night has to keep.** The readout showed
+raw volatility — "15 things will go wrong" — while crises came only from the
+cast's named seeds, so the evening delivered two. `crisisCount` now decides both
+the board and the night. If you add a source of risk, it must reach the night or
+it must not reach the board.
+
+**Never guess anybody's gender.** The roster is half women and parts are cast
+freely across it, so player-facing copy uses they/them for performers. Two
+separate bugs have come from this — "his own line" on Mrs. Siddons-Blake, and
+"The Wexford Boy has frozen. Stay with her." `night.test.js` greps the cue and
+failure lines for gendered pronouns; keep that check green.
 
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.

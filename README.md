@@ -52,7 +52,7 @@ games go to die.
 | **The Bill** | What are we doing, and dare we? | Commitment, made blind | **playable** |
 | **The Company** | Who can actually carry this? | Combination, fit, ego | **playable** |
 | **The Production** | How do I cover what I've got? | Compensation, made informed | not built |
-| **Opening Night** | It is going wrong — what now? | Improvisation, live | **toy playable** |
+| **Opening Night** | It is going wrong — what now? | Improvisation, live | **playable** |
 | *The Notices* | Was that hubris or genius? | *Epilogue, not a phase* | not built |
 
 ### The company
@@ -116,6 +116,40 @@ deliberate; a stage manager in the wings settles the ones who quarrel and the
 ones who drink. Opening cold is always free, because a player who has spent
 everything must still be allowed to open.
 
+### Opening night
+
+The only part of the game that runs on a clock, and the part everything else
+was building towards. The curtain goes up, your company is on the boards in the
+dark, and you have the follow spot.
+
+It is a shooter with the intent inverted: you aim, but you must *sustain*, and
+the target is your own star. There is no miss counter because there does not
+need to be one — losing somebody leaves them working in the dark where the whole
+house can see it. The lamp has mass, so a snatched correction overshoots
+visibly, and learning to lead gently is something the screen teaches rather than
+something the score asserts.
+
+Crises ask for one of two opposite things, which keeps the whole phase on one
+thumb:
+
+> **The Wexford Boy has frozen. Stay with them.**
+> **Hector Vane is dying out there. Take the light off him.**
+
+**A covered trouble does not happen at all.** That is what the production phase
+bought — the absence of an event, not a gentler version of it. Buy the spectacle
+machine and the boy who has never done this before simply never freezes. Choose
+bare boards instead and he freezes with less time to save him.
+
+The evening's own troubles are here too — the horse stopping dead centre, the
+machinery jamming, a flat swinging loose — so a reckless *bill* is as dangerous
+as a reckless cast, and a live horse costs something to run.
+
+What the night hands the settlement is a count of what actually went wrong. The
+dice are gone; nothing else about the settlement changed.
+
+`/spotlight.html` is still there: the same instrument with one performer and no
+consequences, for getting the feel of it.
+
 ### The notices
 
 The epilogue, and the piece that makes the rest a game rather than a
@@ -123,9 +157,9 @@ demonstration. Without it money only ever leaves the account, an impresario who
 mounts one show is broke for ever, and week two is unreachable — which reads to
 a player not as losing but as being stuck.
 
-Each thing that could go wrong is rolled separately, so a reckless production is
-a genuine gamble rather than a fixed tax: sixteen things that might go wrong
-can, on a kind night, produce three.
+What went wrong is what you failed to catch on the night. The board's number is
+a promise the evening keeps: if it says six things will go wrong, six crises
+arrive.
 
 **The reviews describe the night that happened, not the night you planned.**
 Appeal is what the house came hoping for; what it saw is that figure less the

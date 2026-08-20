@@ -56,6 +56,14 @@
 
 </main>
 
+<!-- Opening night takes the whole screen. It is hidden until the curtain goes
+     up, and the cue line is the only chrome on it. -->
+<div id="night" class="night" hidden>
+  <canvas id="night-stage"></canvas>
+  <p class="night__cue" id="night-cue"></p>
+  <p class="night__hint" id="night-hint">Touch and drag to take the lamp</p>
+</div>
+
 <script type="module" src="./src/app.js"></script>
 </body>
 </html>

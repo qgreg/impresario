@@ -8,6 +8,6 @@
   "description": "A mobile web game about mounting a season of theatre you cannot afford.",
   "scripts": {
     "start": "python3 -m http.server 8080",
-    "test": "node test/bill.test.js && node test/company.test.js && node test/production.test.js && node test/notices.test.js && node test/follow.test.js"
+    "test": "node test/bill.test.js && node test/company.test.js && node test/production.test.js && node test/notices.test.js && node test/night.test.js && node test/follow.test.js"
   }
 }

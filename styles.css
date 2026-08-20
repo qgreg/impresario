@@ -352,3 +352,52 @@ body {
 .notice--crowd { color: var(--crowd); }
 .notice--society { color: var(--society); }
 .notice--critics { color: var(--critics); }
+
+/* ------------------------------------------------------------ opening night */
+
+/* The stage takes the whole screen. Nothing on it but the boards, the people,
+   the beam, and one line telling the operator what is going wrong. */
+.night {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #0B0908;
+  touch-action: none;
+}
+.night[hidden] { display: none; }
+.night canvas { display: block; width: 100vw; height: 100vh; }
+
+/* The cue is a caption, never a target — it must not swallow the touch that is
+   meant to be moving the lamp. */
+.night__cue,
+.night__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0 1.4rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.night__cue {
+  top: 8vh;
+  font-size: 1.12rem;
+  line-height: 1.4;
+  color: var(--cream);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.night__cue--on { opacity: 1; }
+/* Hold and avert are opposite instructions, so they are never told apart by
+   colour alone — the wording carries it and the colour only reinforces. */
+.night__cue--hold { color: var(--safe); }
+.night__cue--avert { color: var(--alarm); }
+
+.night__hint {
+  bottom: 9vh;
+  font-size: 0.86rem;
+  color: var(--ash);
+}
+.night__hint[hidden] { display: none; }

@@ -13,6 +13,7 @@
 import {
   LAMP, stepLamp, performerAt, sceneDuration, gradeFollow, noteOn, isLit,
 } from './follow.js';
+import { paintStage, paintPerformer, paintBeam, brightnessAt } from './stagepaint.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -53,8 +54,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-const px = (x) => x * width;
-const py = (y) => y * height;
 
 // -------------------------------------------------------------------- input
 
@@ -127,117 +126,9 @@ function finish() {
 
 // ----------------------------------------------------------------- painting
 
-/** The boards, the back wall, and a row of footlights along the front. */
-function paintStage() {
-  const floor = py(0.52);
-
-  const wall = ctx.createLinearGradient(0, 0, 0, floor);
-  wall.addColorStop(0, '#0B0908');
-  wall.addColorStop(1, '#171210');
-  ctx.fillStyle = wall;
-  ctx.fillRect(0, 0, width, floor);
-
-  const boards = ctx.createLinearGradient(0, floor, 0, height);
-  boards.addColorStop(0, '#221A15');
-  boards.addColorStop(1, '#0E0B09');
-  ctx.fillStyle = boards;
-  ctx.fillRect(0, floor, width, height - floor);
-
-  // Boards receding, drawn as converging lines rather than a texture — cheaper,
-  // and it gives the stage a depth the performer can move within.
-  ctx.strokeStyle = 'rgba(201, 151, 63, 0.05)';
-  ctx.lineWidth = 1;
-  for (let i = -6; i <= 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + i * width * 0.055, floor);
-    ctx.lineTo(width / 2 + i * width * 0.24, height);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = 'rgba(232, 163, 61, 0.16)';
-  for (let i = 0; i < 9; i++) {
-    const x = ((i + 0.5) / 9) * width;
-    ctx.beginPath();
-    ctx.arc(x, height - 6, 9, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-/**
- * She is drawn dark and only the beam reveals her, because that is the entire
- * feedback loop: losing her does not show a miss counter, it leaves an actor
- * working in the dark where everyone can see it happen.
- */
-function paintPerformer(performer, brightness) {
-  const x = px(performer.x);
-  const y = py(performer.y);
-  const scale = height * 0.10;
-
-  const warm = (alpha) => `rgba(242, 228, 203, ${alpha})`;
-  const body = brightness > 0.02
-    ? warm(0.28 + brightness * 0.62)
-    : 'rgba(58, 48, 42, 0.85)';
-
-  ctx.save();
-  ctx.translate(x, y);
-
-  // A long skirted figure: readable as a person at a glance, and its silhouette
-  // survives being reduced to almost nothing when she is unlit.
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.moveTo(-scale * 0.20, -scale * 0.55);
-  ctx.lineTo(scale * 0.20, -scale * 0.55);
-  ctx.lineTo(scale * 0.42, scale * 0.62);
-  ctx.lineTo(-scale * 0.42, scale * 0.62);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(0, -scale * 0.78, scale * 0.20, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Her shadow on the boards only exists while there is a light to cast it.
-  if (brightness > 0.05) {
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.30 * brightness})`;
-    ctx.beginPath();
-    ctx.ellipse(0, scale * 0.68, scale * 0.5, scale * 0.12, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-/** The beam: a haze from above, and the pool it lays on the boards. */
-function paintBeam(lamp) {
-  const x = px(lamp.x);
-  const y = py(lamp.y);
-  const radius = px(LAMP.radius) * 1.9;
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-
-  const haze = ctx.createLinearGradient(x, -height * 0.1, x, y);
-  haze.addColorStop(0, 'rgba(240, 200, 120, 0.16)');
-  haze.addColorStop(1, 'rgba(240, 200, 120, 0.03)');
-  ctx.fillStyle = haze;
-  ctx.beginPath();
-  ctx.moveTo(x - radius * 0.16, -height * 0.1);
-  ctx.lineTo(x + radius * 0.16, -height * 0.1);
-  ctx.lineTo(x + radius, y);
-  ctx.lineTo(x - radius, y);
-  ctx.closePath();
-  ctx.fill();
-
-  const pool = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  pool.addColorStop(0, 'rgba(255, 226, 168, 0.55)');
-  pool.addColorStop(0.45, 'rgba(240, 195, 110, 0.22)');
-  pool.addColorStop(1, 'rgba(240, 195, 110, 0)');
-  ctx.fillStyle = pool;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
+// The stage, the figures and the beam are painted by stagepaint.js, which both
+// this toy and opening night share. Two copies of a stage that must look
+// identical is how they stop looking identical.
 
 /**
  * The only thing on screen that is not the stage: a thin bar showing how much
@@ -280,17 +171,16 @@ function frame(now) {
       performer: { x: performer.x, y: performer.y },
     });
 
-    const distance = Math.hypot(state.lamp.x - performer.x, state.lamp.y - performer.y);
-    // Brightness falls off smoothly even though the score is a hard radius —
-    // a light with a hard edge looks like a bug, and the soft edge is also the
-    // thing that tells the player they are drifting before they lose her.
-    const brightness = Math.max(0, 1 - distance / (LAMP.radius * 2.1));
+    // Brightness falls off smoothly even though the score is a hard radius — a
+    // light with a hard edge looks like a bug, and the soft edge is what tells
+    // the player they are drifting before they actually lose her.
+    const brightness = brightnessAt(state.lamp, performer, LAMP.radius);
 
     litSoFar = state.samples.filter((s) => isLit(s.lamp, s.performer)).length / state.samples.length;
 
-    paintStage();
-    paintPerformer(performer, brightness);
-    paintBeam(state.lamp);
+    paintStage(ctx, width, height);
+    paintPerformer(ctx, width, height, performer, brightness);
+    paintBeam(ctx, width, height, state.lamp, LAMP.radius);
     paintTally(litSoFar, elapsed, total);
 
     if (performer.done) finish();
@@ -299,9 +189,9 @@ function frame(now) {
 
   // Idle: the stage sits dark with the lamp resting wherever it was left.
   state.lamp = stepLamp(state.lamp, state.aim.x, state.aim.y, dt);
-  paintStage();
-  if (state.phase === 'waiting') paintPerformer(performerAt(0), 0);
-  paintBeam(state.lamp);
+  paintStage(ctx, width, height);
+  if (state.phase === 'waiting') paintPerformer(ctx, width, height, performerAt(0), 0);
+  paintBeam(ctx, width, height, state.lamp, LAMP.radius);
 }
 
 requestAnimationFrame(frame);

@@ -17,6 +17,8 @@ import {
   applyProduction, previewFor, gradeProduction,
 } from './production.js';
 import { settleShow, gradeStanding, isRuined } from './notices.js';
+import { buildNight, gradeNight, crisisCount } from './night.js';
+import { runNight } from './openingnight.js';
 import {
   deriveBill, financing, gradeAppeal, gradeVolatility,
   AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
@@ -32,6 +34,9 @@ const state = {
   backer: null,
   assigned: {},   // roleIndex -> performerId
   production: { staging: null, preparation: null },
+  night: null,
+  running: null,      // the live performance, while the curtain is up
+  performance: null,  // what the operator made of it
   result: null,   // the settled night, once the house has opened
   // work → treatment → hook → mount → casting → staging → preparation → ready → open
   step: 'work',
@@ -59,6 +64,10 @@ const el = {
   volatility: document.getElementById('volatility'),
   prompt: document.getElementById('prompt'),
   cards: document.getElementById('cards'),
+  night: document.getElementById('night'),
+  nightStage: document.getElementById('night-stage'),
+  nightCue: document.getElementById('night-cue'),
+  nightHint: document.getElementById('night-hint'),
 };
 
 // --------------------------------------------------------------- painting
@@ -140,11 +149,20 @@ function paintBill(bill, casting, production) {
   paintMeters(settled && state.result ? state.result.received : appeal);
 
   const volatility = bill.volatility + casting_.volatility + production_.volatility;
-  const things = volatility === 1 ? 'one thing will go wrong' : `${volatility} things will go wrong`;
+
+  // The board shows what the evening will actually contain, not the raw risk
+  // figure behind it. It promised "15 things will go wrong" and then opening
+  // night produced two, because volatility and crises were different
+  // quantities. A number on the board is a promise the night has to keep.
+  const coming = crisisCount(volatility, (production_.seeds ?? []).filter((s) => s.state !== 'covered').length);
+  const things = coming === 1 ? 'one thing will go wrong' : `${coming} things will go wrong`;
 
   if (settled && state.result) {
-    const { mishaps, couldHaveGoneWrong } = state.result;
-    const atRisk = Math.max(0, couldHaveGoneWrong);
+    // The performance knows how many crises the evening actually held; the
+    // settlement only knows the risk figure behind them. Report the night that
+    // was played, or the board reads "4 of 15 went wrong" after six crises.
+    const { mishaps } = state.result;
+    const atRisk = Math.max(0, state.performance?.couldHaveGoneWrong ?? state.result.couldHaveGoneWrong);
     el.volatility.textContent = mishaps === 0
       ? atRisk === 0 ? 'nothing could go wrong, and nothing did' : `none of the ${atRisk} went wrong`
       : `${mishaps} of ${atRisk} went wrong`;
@@ -153,9 +171,9 @@ function paintBill(bill, casting, production) {
   }
 
   el.volatility.classList.remove('readout__value--short');
-  el.volatility.textContent = volatility === 0 && !bill.work
+  el.volatility.textContent = !bill.work
     ? '—'
-    : `${gradeVolatility(volatility)} · ${volatility === 0 ? 'nothing will go wrong' : things}`;
+    : `${gradeVolatility(volatility)} · ${coming === 0 ? 'nothing will go wrong' : things}`;
 }
 
 /** One tappable option. Everything the player needs to decide is on the face. */
@@ -570,13 +588,16 @@ function paintOpen(bill, casting, production) {
   // Careful play can drive volatility below zero, and "0 of the -2 things that
   // could go wrong did" is nonsense. Below one, there was simply nothing to fear.
   const atRisk = Math.max(0, result.couldHaveGoneWrong);
-  const wentWrong = atRisk === 0
-    ? 'There was never anything to go wrong.'
-    : result.mishaps === 0
-      ? `Nothing went wrong, of the ${atRisk} that might have.`
-      : result.mishaps === 1
-        ? `One of the ${atRisk} things that could go wrong did.`
-        : `${result.mishaps} of the ${atRisk} things that could go wrong did.`;
+  const performance = state.performance;
+  const wentWrong = performance
+    ? `${gradeNight(performance, performance.lit)}.`
+    : atRisk === 0
+      ? 'There was never anything to go wrong.'
+      : result.mishaps === 0
+        ? `Nothing went wrong, of the ${atRisk} that might have.`
+        : result.mishaps === 1
+          ? `One of the ${atRisk} things that could go wrong did.`
+          : `${result.mishaps} of the ${atRisk} things that could go wrong did.`;
 
   el.cards.appendChild(card(
     result.profit >= 0 ? `You are ${result.profit}g up` : `You are ${-result.profit}g down`,
@@ -593,6 +614,20 @@ function paintOpen(bill, casting, production) {
       onSelect: () => {},
     },
   ));
+
+  // What actually got past, named. The abstract count is in the card above;
+  // this is the part a player will remember and retell.
+  if (state.performance?.failures?.length) {
+    const missed = document.createElement('ul');
+    missed.className = 'seeds';
+    for (const failure of state.performance.failures) {
+      const item = document.createElement('li');
+      item.className = 'seed seed--exposed';
+      item.textContent = failure;
+      missed.appendChild(item);
+    }
+    el.cards.appendChild(missed);
+  }
 
   const list = document.createElement('ul');
   list.className = 'notices';
@@ -720,13 +755,45 @@ function open_() {
   }
   const volatility = bill.volatility + casting.volatility + production.volatility;
 
-  // Opening night is not built yet, so the mishaps are rolled. When it is, the
-  // follow spot hands in its own count and this call passes it straight through.
-  state.result = settleShow({ appeal, volatility, outlay });
-  state.capital = funds() - outlay + state.result.takings;
-  state.reputation += state.result.standing;
-  state.step = 'open';
-  render();
+  // The curtain goes up before anything is settled. Opening night hands back a
+  // count of what actually went wrong, and only then does the money move — the
+  // settlement has not changed at all, the thumb has simply replaced the dice.
+  const night = buildNight(casting, production, volatility);
+  state.night = night;
+
+  playNight(night, (result) => {
+    state.performance = result;
+    state.result = settleShow({ appeal, volatility, outlay }, { mishaps: result.mishaps });
+    state.capital = funds() - outlay + state.result.takings;
+    state.reputation += state.result.standing;
+    state.step = 'open';
+    render();
+  });
+}
+
+/** Put the stage up, run the evening, and take it down again. */
+function playNight(night, done) {
+  el.night.hidden = false;
+  el.nightCue.textContent = '';
+  el.nightCue.className = 'night__cue';
+  el.nightHint.hidden = false;
+
+  state.running = runNight(el.nightStage, night, {
+    onCue(text, requirement) {
+      // The hint is only for the first touch; once the evening is under way the
+      // screen belongs to the performance.
+      el.nightHint.hidden = true;
+      el.nightCue.textContent = text ?? '';
+      el.nightCue.className = text
+        ? `night__cue night__cue--on night__cue--${requirement}`
+        : 'night__cue';
+    },
+    onFinish(result) {
+      el.night.hidden = true;
+      state.running = null;
+      done(result);
+    },
+  });
 }
 
 function reset() {
@@ -735,6 +802,8 @@ function reset() {
   state.assigned = {};
   state.production = { staging: null, preparation: null };
   state.result = null;
+  state.night = null;
+  state.performance = null;
   state.step = 'work';
   state.week++;
   render();
@@ -763,6 +832,8 @@ window.__debug = {
   get standing() { return state.reputation; },
   get capital() { return state.capital; },
   open() { open_(); },
+  get night() { return state.night; },
+  get performance() { return state.performance; },
   stage(id) { chooseStaging(STAGINGS.find((s) => s.id === id)); },
   prepare(id) { choosePreparation(PREPARATIONS.find((p) => p.id === id)); },
   cast(index, performerId) { assign(index, performerId); },
