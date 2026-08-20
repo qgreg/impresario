@@ -13,6 +13,7 @@
  */
 
 import { AUDIENCES } from './bill.js';
+import { FATES } from './data.js';
 
 /** What each audience is worth at the box office. Critics pay nothing, ever. */
 export const WORTH = { crowd: 4, society: 5, critics: 0 };
@@ -218,4 +219,36 @@ export function cheapestProduction(tables, rolesOf, costOf) {
  */
 export function isRuined(capital, floor) {
   return capital < floor;
+}
+
+/**
+ * How the season ended.
+ *
+ * Ruin used to be one card saying the same sentence every time, which made
+ * losing read as a wall rather than as an ending. A fate is chosen by *how* the
+ * season went wherever the circumstances say anything — a celebrated pauper and
+ * a notorious one deserve different obituaries — and drawn from the general pool
+ * otherwise.
+ *
+ * The specific fates are listed first in FATES and the first match wins, so
+ * ordering that table is how the priority is expressed.
+ *
+ * @param {object} season { impresario, weeks, standing, capital, backersSpent }
+ * @param {Function} rng  injected, so a test can pin the general pool
+ */
+export function fateFor(season, rng = Math.random) {
+  const context = {
+    impresario: season.impresario ?? null,
+    weeks: season.weeks ?? 0,
+    standing: season.standing ?? 0,
+    capital: season.capital ?? 0,
+    backersSpent: season.backersSpent ?? [],
+  };
+
+  const earned = FATES.find((fate) => fate.when && fate.when(context));
+  if (earned) return earned;
+
+  // Everything without a condition is the general pool.
+  const pool = FATES.filter((fate) => !fate.when);
+  return pool[Math.floor(rng() * pool.length) % pool.length];
 }

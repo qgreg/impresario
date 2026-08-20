@@ -41,6 +41,19 @@ Every exciting choice raises the number of things that will go wrong once the
 curtain is up. The thrilling bill is literally the dangerous one, and you watch
 yourself overreach while you are doing it.
 
+## Who you are
+
+Before anything else, you choose an impresario. It is a difficulty selector
+that does not announce itself as one — each is a different purse and a different
+problem, and the problem is the interesting half.
+
+| | Purse | Standing | The trouble |
+|---|---|---|---|
+| **The Clerk** | 120g | unknown | Eleven years at the Board of Trade. A clean sheet, which is to say nobody has heard of you. |
+| **The Soap Heir** | 210g | shaky | Money, and a profession that has already decided what you are. |
+| **The Actor-Manager** | 85g | talked about | Magnificent notices, and the accounts were always somebody else's problem. |
+| **The Absconder** | 55g | notorious | Three seasons, three countries. Only the Syndicate will still take your call. |
+
 ## Starting
 
 The page opens on a closed curtain: two halves of velvet, the title between
@@ -203,7 +216,11 @@ shortfall usually appears, since salaries are the larger half of the outlay.
 But **there are three people in London who will advance an impresario anything,
 and each of them will do it once.** Nobody funds the same man's third failure.
 When the last of them has been spent and the purse is under the floor, that is
-the end of it.
+the end of it — and the town has a range of ways of closing over you. The
+obituary is chosen by *how* the season went: a celebrated pauper and a notorious
+one are not remembered the same way, the Syndicate collects in person, and the
+Absconder has heard that Lisbon is pleasant and that they do not get the English
+papers there until Thursday.
 
 Being short of money never blocks you. It opens the drawer of people who will
 lend it, and every one of them wants something that costs more than the money

@@ -7,14 +7,14 @@
  * than leaving the player tapping through bills they can never afford.
  */
 import {
-  settleShow, rollMishaps, noticesFor, gradeStanding, isRuined, cheapestProduction,
+  settleShow, rollMishaps, noticesFor, gradeStanding, isRuined, cheapestProduction, fateFor,
   WORTH, MISHAP_CHANCE, MISHAP_DAMAGE, CRITIC_EXPECTATION, STANDING_STEP,
 } from '../src/notices.js';
 import { deriveBill } from '../src/bill.js';
 import { appraiseCasting } from '../src/company.js';
 import { applyProduction } from '../src/production.js';
 import { rolesOf, costOf } from '../src/bill.js';
-import { WORKS, TREATMENTS, HOOKS, STAGINGS, PREPARATIONS, PERFORMERS, BACKERS } from '../src/data.js';
+import { WORKS, TREATMENTS, HOOKS, STAGINGS, PREPARATIONS, PERFORMERS, BACKERS, FATES, IMPRESARIOS } from '../src/data.js';
 
 const failures = [];
 function check(label, condition, detail = '') {
@@ -247,6 +247,87 @@ check('a tidy night does not', noticesFor(appeal, 1).every((n) => !/disasters/.t
 }
 
 check('mishap damage is a real bite, not a rounding error', MISHAP_DAMAGE >= 0.04);
+
+// --- who you are ------------------------------------------------------------------
+// A difficulty selector that does not announce itself as one. Each impresario is
+// a different amount of money and a different problem.
+
+check('every impresario has a purse, a standing and something to read',
+  IMPRESARIOS.every((i) => typeof i.capital === 'number' && typeof i.reputation === 'number'
+    && i.blurb.length > 0 && i.epithet.length > 0));
+check('their ids are unique', new Set(IMPRESARIOS.map((i) => i.id)).size === IMPRESARIOS.length);
+check('they span a real range of money, so the choice matters',
+  Math.max(...IMPRESARIOS.map((i) => i.capital)) >= Math.min(...IMPRESARIOS.map((i) => i.capital)) * 2);
+
+{
+  // Every one of them has to be able to open something on the first night, or
+  // the choice includes a trap that loses before it starts.
+  const floor = cheapestProduction({
+    works: WORKS, treatments: TREATMENTS, hooks: HOOKS,
+    performers: PERFORMERS, stagings: STAGINGS, preparations: PREPARATIONS,
+  }, rolesOf, costOf);
+  const doomed = IMPRESARIOS.filter((i) => {
+    const pockets = BACKERS.filter((b) => !i.backers || i.backers.includes(b.id)).map((b) => b.offers);
+    return isRuined(i.capital + Math.max(0, ...pockets), floor);
+  });
+  check('nobody begins a season already ruined', doomed.length === 0, doomed.map((i) => i.id).join(', '));
+}
+
+check('an impresario who has burned their bridges keeps at least one backer',
+  IMPRESARIOS.every((i) => !i.backers || i.backers.length >= 1));
+check('and every backer they are allowed actually exists',
+  IMPRESARIOS.every((i) => !i.backers || i.backers.every((id) => BACKERS.some((b) => b.id === id))));
+
+// --- how it ends --------------------------------------------------------------------
+// Ruin was one card saying the same sentence every time, which made losing read
+// as a wall rather than an ending.
+
+// The player is never given a gender, by the impresarios or by their obituary.
+// Two fates opened with "there is always work for a man" and "swallowed better
+// men"; this is the third time this class of bug has appeared in the copy.
+{
+  const gendered = /\b(he|him|his|she|her|hers|himself|herself|man|woman|men|women)\b/i;
+  const aboutYou = [
+    ...FATES.map((f) => `${f.headline} ${f.text}`),
+    ...IMPRESARIOS.map((i) => `${i.name} ${i.epithet} ${i.blurb}`),
+  ];
+  const guessing = aboutYou.filter((line) => gendered.test(line));
+  check('nothing said to or about the player guesses their gender',
+    guessing.length === 0, guessing.join(' | '));
+}
+
+check('every fate has a headline and something to read',
+  FATES.every((f) => f.headline.length > 0 && f.text.length > 0));
+check('fate ids are unique', new Set(FATES.map((f) => f.id)).size === FATES.length);
+check('there is a general pool for a season that says nothing in particular',
+  FATES.filter((f) => !f.when).length >= 3);
+
+{
+  const base = { impresario: 'clerk', weeks: 4, standing: 0, capital: 3, backersSpent: [] };
+  check('a celebrated pauper and a notorious one get different obituaries',
+    fateFor({ ...base, standing: 12 }).id !== fateFor({ ...base, standing: -6 }).id);
+  check('the Syndicate collects in person',
+    fateFor({ ...base, backersSpent: ['syndicate'] }).id === 'syndicate');
+  check('a season lasting one week is remarked upon',
+    fateFor({ ...base, weeks: 1 }).id === 'brief');
+  check('and a long one is too',
+    fateFor({ ...base, weeks: 11 }).id === 'longrun');
+  check('who you were outranks how it went',
+    fateFor({ ...base, impresario: 'absconder', standing: 12 }).id === 'quayside');
+}
+
+check('an unremarkable season still ends in something',
+  (() => {
+    const plain = { impresario: 'clerk', weeks: 4, standing: 0, capital: 3, backersSpent: [] };
+    const drawn = new Set();
+    for (let i = 0; i < 40; i++) drawn.add(fateFor(plain, () => i / 40).id);
+    return drawn.size > 1 && [...drawn].every((id) => FATES.some((f) => f.id === id && !f.when));
+  })(),
+  'and the pool is actually varied');
+
+check('a fate is always found, however odd the season',
+  [{}, { weeks: 0 }, { standing: 99, weeks: 99, backersSpent: ['syndicate'] }]
+    .every((season) => fateFor(season)?.headline));
 
 console.log(failures.length ? `\n${failures.length} failing check(s)` : '\nall notices checks passed');
 process.exit(failures.length ? 1 : 0);

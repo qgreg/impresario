@@ -9,14 +9,14 @@
  * module owns the state and paints the screen, and that is all it does.
  */
 
-import { WORKS, TREATMENTS, HOOKS, BACKERS, STAGINGS, PREPARATIONS, PERFORMERS } from './data.js';
+import { WORKS, TREATMENTS, HOOKS, BACKERS, STAGINGS, PREPARATIONS, PERFORMERS, IMPRESARIOS } from './data.js';
 import {
   appraiseCasting, availableTo, fitFor, gradeCompany, impositionFor,
 } from './company.js';
 import {
   applyProduction, previewFor, gradeProduction,
 } from './production.js';
-import { settleShow, gradeStanding, isRuined, cheapestProduction } from './notices.js';
+import { settleShow, gradeStanding, isRuined, cheapestProduction, fateFor } from './notices.js';
 import { buildNight, gradeNight, crisisCount } from './night.js';
 import { runNight } from './openingnight.js';
 import {
@@ -49,7 +49,10 @@ const RUIN_FLOOR = cheapestProduction(
  * same man's third failure.
  */
 function backersLeft() {
-  return BACKERS.filter((backer) => !state.spentBackers.includes(backer.id));
+  const allowed = state.impresario?.backers;
+  return BACKERS
+    .filter((backer) => !allowed || allowed.includes(backer.id))
+    .filter((backer) => !state.spentBackers.includes(backer.id));
 }
 
 function deepestPocket() {
@@ -63,6 +66,8 @@ function takeBacker(backer) {
 }
 
 const state = {
+  impresario: null,   // chosen before anything else; sets the purse and the problem
+  fate: null,         // how the season ended, once it has
   capital: STARTING_CAPITAL,
   week: 1,
   reputation: 0,
@@ -75,8 +80,9 @@ const state = {
   running: null,      // the live performance, while the curtain is up
   performance: null,  // what the operator made of it
   result: null,   // the settled night, once the house has opened
-  // work → treatment → hook → mount → casting → staging → preparation → ready → open
-  step: 'work',
+  // impresario → work → treatment → hook → mount → casting → staging →
+  // preparation → ready → open
+  step: 'impresario',
 };
 
 /**
@@ -101,6 +107,8 @@ const el = {
   volatility: document.getElementById('volatility'),
   prompt: document.getElementById('prompt'),
   cards: document.getElementById('cards'),
+  poster: document.getElementById('poster'),
+  readout: document.getElementById('readout'),
   curtain: document.getElementById('curtain'),
   begin: document.getElementById('begin'),
   night: document.getElementById('night'),
@@ -143,8 +151,9 @@ function paintMeters(appeal) {
 }
 
 function paintStanding() {
-  el.capital.textContent = `${state.capital}g`;
-  el.week.textContent = `Week ${state.week}`;
+  el.capital.textContent = state.impresario ? `${state.capital}g` : '—';
+  // Before anybody has been chosen there is no season to be in the first week of.
+  el.week.textContent = state.impresario ? `Week ${state.week}` : 'not yet begun';
   // Standing is shown in words and never as a bare number. It used to print the
   // raw figure, which told the player nothing about whether +3 was good.
   el.reputation.textContent = gradeStanding(state.reputation);
@@ -320,6 +329,7 @@ function paintChoice(bill, casting, production) {
     return;
   }
 
+  if (state.step === 'impresario') return paintImpresarios();
   if (state.step === 'ruined') return paintRuined();
   if (state.step === 'mount') return paintMount();
   if (state.step === 'casting') return paintCasting(casting);
@@ -717,6 +727,7 @@ function paintOpen(bill, casting, production) {
   // through bills they can never afford for ever, which is not a loss — it is
   // a hang, and it is what being "stuck" actually looked like.
   if (isRuined(state.capital + deepestPocket(), RUIN_FLOOR)) {
+    ruin();
     appendRuin();
     return;
   }
@@ -728,18 +739,88 @@ function paintOpen(bill, casting, production) {
 }
 
 /**
- * The end of a season, said plainly and in one place.
+ * Who you are. The first choice of all, and the only one that cannot be undone.
  *
- * The cheapest possible evening is RUIN_FLOOR guineas and the deepest pocket in
- * town will advance DEEPEST_POCKET more; below the two together, nothing on the
- * shelf can be opened by any combination of choices.
+ * A difficulty selector that does not announce itself as one — each is a
+ * different purse and a different problem, and the problem is the interesting
+ * half. The heir has money and no standing; the actor-manager has standing and
+ * no money; the absconder has neither and one friend left in London.
+ */
+function paintImpresarios() {
+  el.prompt.textContent = 'Who are you?';
+  for (const person of IMPRESARIOS) {
+    const tags = [
+      { kind: 'quiet', text: `${person.capital}g` },
+      {
+        kind: person.reputation >= 0 ? 'society' : 'risk',
+        text: `known as ${gradeStanding(person.reputation)}`,
+      },
+    ];
+    if (person.backers) {
+      tags.push({ kind: 'risk', text: 'one backer left in town' });
+    }
+    el.cards.appendChild(card(person.name, {
+      cost: person.epithet,
+      note: person.blurb,
+      tags,
+      onSelect: () => chooseImpresario(person),
+    }));
+  }
+}
+
+function chooseImpresario(person) {
+  state.impresario = person;
+  state.capital = person.capital;
+  state.reputation = person.reputation;
+  state.spentBackers = [];
+  state.week = 1;
+  state.step = 'work';
+  render();
+}
+
+/**
+ * Fix how the season ended, once, at the moment it ends.
+ *
+ * Drawn here rather than while painting because the general pool is random: a
+ * fate chosen during render would reshuffle itself on every repaint, and the
+ * player would watch their own obituary change its mind.
+ */
+function ruin() {
+  if (state.step !== 'ruined') {
+    state.fate = fateFor({
+      impresario: state.impresario?.id ?? null,
+      weeks: state.week,
+      standing: state.reputation,
+      capital: state.capital,
+      backersSpent: state.spentBackers,
+    });
+    state.step = 'ruined';
+  }
+}
+
+/**
+ * The end of a season.
+ *
+ * The cheapest possible evening is RUIN_FLOOR guineas, and everybody who would
+ * have advanced the difference has already done it once. Below that, nothing on
+ * the shelf can be opened by any combination of choices.
  */
 function appendRuin() {
-  el.cards.appendChild(card('You are ruined', {
-    note: `${state.capital}g will not mount anything — the cheapest evening in London runs to ${RUIN_FLOOR}g, and everyone who would once have advanced you the difference has done it already. You lasted ${state.week} week${state.week === 1 ? '' : 's'}.`,
+  const fate = state.fate ?? { headline: 'You are ruined', text: '' };
+
+  el.cards.appendChild(card(fate.headline, {
+    note: fate.text,
     className: 'card--quiet',
     onSelect: () => {},
   }));
+
+  el.cards.appendChild(card('The books', {
+    cost: `${state.capital}g left`,
+    note: `The cheapest evening in London runs to ${RUIN_FLOOR}g. You lasted ${state.week} week${state.week === 1 ? '' : 's'} as ${state.impresario?.name ?? 'an impresario'}, and finished ${gradeStanding(state.reputation)}.`,
+    className: 'card--quiet',
+    onSelect: () => {},
+  }));
+
   el.cards.appendChild(card('Begin again', {
     className: 'card--mount',
     onSelect: beginSeason,
@@ -752,14 +833,23 @@ function paintRuined() {
   appendRuin();
 }
 
-/** A fresh season: back to the starting purse and no reputation at all. */
+/** A fresh season, and a fresh chance to be somebody else entirely. */
 function beginSeason() {
+  state.impresario = null;
+  state.fate = null;
   state.capital = STARTING_CAPITAL;
   state.reputation = 0;
-  state.week = 0;
+  state.week = 1;
   state.backer = null;
   state.spentBackers = [];
-  reset();
+  state.choice = { work: null, treatment: null, hook: null };
+  state.assigned = {};
+  state.production = { staging: null, preparation: null };
+  state.result = null;
+  state.night = null;
+  state.performance = null;
+  state.step = 'impresario';
+  render();
 }
 
 // ------------------------------------------------------------------ state
@@ -896,8 +986,15 @@ function render() {
   // the notices is a verdict; ruin discovered three screens into a bill you
   // cannot pay for is a dead end the player walked into on our invitation.
   if (state.step === 'work' && isRuined(state.capital + deepestPocket(), RUIN_FLOOR)) {
-    state.step = 'ruined';
+    ruin();
   }
+
+  // Before a season exists and after one has ended, an empty poster and three
+  // indifferent meters are furniture rather than information. The board belongs
+  // to a production, so it appears when there is one.
+  const framing = state.step === 'impresario' || state.step === 'ruined';
+  el.poster.hidden = framing;
+  el.readout.hidden = framing;
 
   const bill = currentBill();
   const casting = currentCasting();
@@ -944,6 +1041,9 @@ window.__debug = {
   get standing() { return state.reputation; },
   get capital() { return state.capital; },
   get floor() { return RUIN_FLOOR; },
+  get fate() { return state.fate; },
+  get impresario() { return state.impresario?.id ?? null; },
+  become(id) { const p = IMPRESARIOS.find((i) => i.id === id); if (p) chooseImpresario(p); return p?.id ?? null; },
   get backersLeft() { return backersLeft().map((b) => b.id); },
   // Test seam only: drops the purse to a chosen figure so the end of a season
   // can be reached without playing six losing weeks to get there.

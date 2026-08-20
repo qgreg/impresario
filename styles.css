@@ -91,6 +91,9 @@ body {
 
 /* -------------------------------------------------------------- poster */
 
+.poster[hidden],
+.readout[hidden] { display: none; }
+
 .poster {
   flex: 0 1 auto;
   display: flex;

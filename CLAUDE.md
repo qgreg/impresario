@@ -176,11 +176,27 @@ cast's named seeds, so the evening delivered two. `crisisCount` now decides both
 the board and the night. If you add a source of risk, it must reach the night or
 it must not reach the board.
 
+**The impresario is chosen first, and sets the purse, the standing and who will
+still lend.** `IMPRESARIOS` in data.js. A test asserts none of them begins a
+season already ruined — a difficulty option that loses before it starts is a
+trap, not a choice.
+
+**Ruin has a range of endings, fixed once at the moment it happens.** `fateFor`
+picks by how the season went; the first matching entry in `FATES` wins, so
+ordering that table expresses the priority. Draw it in `ruin()`, never while
+painting: the general pool is random, so a fate chosen during render reshuffles
+on every repaint and the player watches their own obituary change its mind.
+
+**Anything the app hides needs its own `[hidden]` guard in CSS.** An element with
+`display: flex` of its own beats the user-agent `[hidden]` rule, so setting the
+attribute silently does nothing. `.poster` and `.readout` carry the guard.
+
 **Never guess anybody's gender.** The roster is half women and parts are cast
 freely across it, so player-facing copy uses they/them for performers. Two
 separate bugs have come from this — "his own line" on Mrs. Siddons-Blake, and
-"The Wexford Boy has frozen. Stay with her." `night.test.js` greps the cue and
-failure lines for gendered pronouns; keep that check green.
+"The Wexford Boy has frozen. Stay with her." Two tests grep for this now — `night.test.js` over the crisis cues, and
+`notices.test.js` over the fates and the impresario copy. It has been three
+separate bugs. Keep both green.
 
 **The landing page is a curtain, and it is CSS.** No images anywhere in this
 project — a photograph is one more thing to fetch on a phone signal, and the

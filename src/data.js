@@ -540,3 +540,139 @@ export const PREPARATIONS = [
     note: 'Somebody in the wings who is not frightened of any of them.',
   },
 ];
+
+/**
+ * Who you are.
+ *
+ * A difficulty selector that does not announce itself as one. Each of these is
+ * a different amount of money and a different problem, and the problem is the
+ * interesting half: the heir has a purse and no standing, the actor-manager has
+ * standing and no purse, and the absconder has neither and only one friend left
+ * in London.
+ *
+ * `backers` narrows who in town will still take a meeting. Omitted means all of
+ * them.
+ */
+export const IMPRESARIOS = [
+  {
+    id: 'clerk',
+    name: 'The Clerk',
+    epithet: 'eleven years at the Board of Trade',
+    capital: 120,
+    reputation: 0,
+    blurb: 'A drawer of plays nobody has read and a savings book you have just emptied. Nobody in the theatre has heard of you, which is at least a clean sheet.',
+  },
+  {
+    id: 'heir',
+    name: 'The Soap Heir',
+    epithet: 'money, and no notion what to do with it',
+    capital: 210,
+    reputation: -2,
+    blurb: 'Your father made a fortune in soap and you intend to lose it in the theatre. The profession knows exactly what you are and has already decided.',
+  },
+  {
+    id: 'player',
+    name: 'The Actor-Manager',
+    epithet: 'thirty years of magnificent notices',
+    capital: 85,
+    reputation: 5,
+    blurb: 'You have played Hamlet in every town with a gas supply. The reviews were superb and the accounts were somebody else’s problem, until now.',
+  },
+  {
+    id: 'absconder',
+    name: 'The Absconder',
+    epithet: 'three seasons, three countries',
+    capital: 55,
+    reputation: -4,
+    backers: ['syndicate'],
+    blurb: 'You have done this before. Twice it ended in court and once it ended at a quayside. Only the Syndicate will still take your call, and they are not sentimental.',
+  },
+];
+
+/**
+ * How it ends.
+ *
+ * Ruin was one card that said the same thing every time, which made losing feel
+ * like a wall rather than an ending. These are chosen by *how* the season went
+ * wherever the circumstances say something — a celebrated pauper and a notorious
+ * one deserve different obituaries — and drawn from the general pool otherwise.
+ *
+ * `when` is a predicate over the season. The first match wins, so the specific
+ * ones are listed first.
+ */
+// The player's gender is never established and never guessed at — see the
+// impresarios above, who are a Clerk and an Heir rather than a man or a woman.
+// A test greps this table for pronouns.
+export const FATES = [
+  {
+    id: 'quayside',
+    when: ({ impresario }) => impresario === 'absconder',
+    headline: 'A fourth country',
+    text: 'You have heard Lisbon is pleasant, and that they do not get the English papers there until Thursday.',
+  },
+  {
+    id: 'soap',
+    when: ({ impresario }) => impresario === 'heir',
+    headline: 'Your father’s soap',
+    text: 'It took eleven years to make and rather less than one to spend. There is talk of putting you back in the works.',
+  },
+  {
+    id: 'boards',
+    when: ({ impresario }) => impresario === 'player',
+    headline: 'Back to the boards',
+    text: 'There is always work for somebody who can still do the soliloquy. Rather less for one who tried to do the accounts.',
+  },
+  {
+    id: 'syndicate',
+    when: ({ backersSpent }) => backersSpent.includes('syndicate'),
+    headline: 'The Syndicate has sent somebody',
+    text: 'They are waiting in the alley by the scene dock. They have not read the notices and do not intend to.',
+  },
+  {
+    id: 'celebrated',
+    when: ({ standing }) => standing >= 9,
+    headline: 'Celebrated, and penniless',
+    text: 'The critics will mourn you at length on Thursday. You will read it in a room you cannot pay for.',
+  },
+  {
+    id: 'notorious',
+    when: ({ standing }) => standing <= -4,
+    headline: 'Notorious, and penniless',
+    text: 'Nobody will say your name aloud any more, which saves the trouble of a farewell.',
+  },
+  {
+    id: 'brief',
+    when: ({ weeks }) => weeks <= 1,
+    headline: 'A record, of a kind',
+    text: 'One week. The Alhambra has stood dark longer than that between pantomimes.',
+  },
+  {
+    id: 'longrun',
+    when: ({ weeks }) => weeks >= 8,
+    headline: 'A good long run',
+    text: 'Eight weeks is more than most manage. The Alhambra has swallowed better in three.',
+  },
+
+  // The general pool. Nothing in the season points anywhere in particular, so
+  // the town simply closes over you.
+  {
+    id: 'warehouse',
+    headline: 'The Alhambra is to be a furniture warehouse',
+    text: 'The new tenant says the acoustics are wasted on wardrobes, and takes it anyway.',
+  },
+  {
+    id: 'glasses',
+    headline: 'Opera glasses, tuppence the pair',
+    text: 'You are last seen selling them on the pavement outside a theatre you used to own.',
+  },
+  {
+    id: 'wolverhampton',
+    headline: 'There is a position going in Wolverhampton',
+    text: 'A circus wants somebody who can handle temperamental performers. They have heard you are qualified.',
+  },
+  {
+    id: 'mailcoach',
+    headline: 'The northern mail leaves at six',
+    text: 'You are on it, with one trunk and a promptbook, and are not heard of in London again.',
+  },
+];
