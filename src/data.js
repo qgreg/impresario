@@ -425,3 +425,118 @@ export const ADJACENT = {
   Character: ['Heavy', 'Comedian'],
   Utility: ['Leading', 'Juvenile', 'Heavy', 'Comedian', 'Character'],
 };
+
+/**
+ * The staging: what the audience is actually looking at.
+ *
+ * This is the first choice the player makes with real information. The bill was
+ * committed to blind and the cast is whoever would take the parts — by now the
+ * niece cannot act, the Ghost is a drunk who may be extraordinary, and two of
+ * them are not speaking. Staging is the chance to do something about it.
+ *
+ * `covers` names the kinds of trouble this staging hides. `exposes` names the
+ * kinds it makes worse. A spectacle keeps the audience's eye off a weak
+ * performer; bare boards and one lamp put every fault directly in front of
+ * them, and every virtue too.
+ */
+export const STAGINGS = [
+  {
+    id: 'store',
+    name: 'Flats from the Store',
+    cost: 6,
+    appeal: { crowd: -1, society: -1, critics: 0 },
+    volatility: 0,
+    covers: [],
+    exposes: [],
+    note: 'The same forest we used in March. Nobody will remember.',
+  },
+  {
+    id: 'built',
+    name: 'A Set Built for It',
+    cost: 22,
+    appeal: { crowd: 2, society: 2, critics: 1 },
+    volatility: 0,
+    covers: [],
+    exposes: [],
+    note: 'Solid, handsome, and it will not fall over.',
+  },
+  {
+    id: 'machine',
+    name: 'A Spectacle Machine',
+    cost: 46,
+    appeal: { crowd: 6, society: 0, critics: -2 },
+    volatility: 2,
+    covers: ['miscast', 'green'],
+    exposes: [],
+    note: 'Sixty feet of hydraulics. Nobody will be watching the acting.',
+  },
+  {
+    id: 'stark',
+    name: 'Bare Boards and One Lamp',
+    cost: 2,
+    appeal: { crowd: -3, society: 0, critics: 5 },
+    volatility: -1,
+    covers: [],
+    exposes: ['miscast', 'green'],
+    note: 'Nothing to hide behind. Everything rests on the acting.',
+  },
+  {
+    id: 'painter',
+    name: 'A Famous Painter Designs It',
+    cost: 52,
+    appeal: { crowd: 1, society: 6, critics: 3 },
+    volatility: 1,
+    covers: [],
+    exposes: [],
+    note: 'The boxes will come to see the curtain. This has bankrupted better men.',
+  },
+];
+
+/**
+ * The preparation: how ready the thing actually is.
+ *
+ * Rehearsal is the other half of compensation, and the half that works on
+ * people rather than on scenery. Time settles a green performer; a firm hand in
+ * the wings settles the ones who quarrel and the ones who drink.
+ *
+ * Opening cold is always available and always free, because a player who has
+ * spent everything must still be allowed to open.
+ */
+export const PREPARATIONS = [
+  {
+    id: 'cold',
+    name: 'Open Cold',
+    cost: 0,
+    appeal: { crowd: 0, society: 0, critics: -1 },
+    volatility: 3,
+    covers: [],
+    note: 'They have read it. Most of them.',
+  },
+  {
+    id: 'week',
+    name: 'A Week of Rehearsal',
+    cost: 14,
+    appeal: { crowd: 0, society: 0, critics: 1 },
+    volatility: -2,
+    covers: ['green'],
+    note: 'Enough to get the moves right and the nerves down.',
+  },
+  {
+    id: 'month',
+    name: 'A Month of Rehearsal',
+    cost: 38,
+    appeal: { crowd: 1, society: 1, critics: 3 },
+    volatility: -4,
+    covers: ['green', 'miscast'],
+    note: 'Long enough that even the wrong casting starts to look deliberate.',
+  },
+  {
+    id: 'manager',
+    name: 'Engage a Stage Manager',
+    cost: 20,
+    appeal: { crowd: 0, society: 0, critics: 0 },
+    volatility: -1,
+    covers: ['feud', 'drink'],
+    note: 'Somebody in the wings who is not frightened of any of them.',
+  },
+];

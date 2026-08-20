@@ -25,6 +25,9 @@
   --critics: #6FB3A8;
 
   --alarm: #D97A5A;
+  /* Trouble that has been paid for and handled. Distinct from --critics teal,
+     and never the only signal — a covered line carries a tick as well. */
+  --safe: #8FB96A;
 
   --tap: 48px;   /* nothing interactive is ever smaller than this */
 }
@@ -261,6 +264,7 @@ body {
 .tag--society { color: var(--society); }
 .tag--critics { color: var(--critics); }
 .tag--risk { color: var(--alarm); }
+.tag--quiet { color: var(--ash); }
 
 /* The mount button is the commitment, so it looks unlike every other card. */
 .card--mount {
@@ -324,3 +328,17 @@ body {
 .seeds { list-style: none; margin: 0.1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
 .seed { font-size: 0.74rem; color: var(--alarm); font-style: italic; }
 .seed::before { content: '\2020\00a0'; }
+
+/* What a staging would do to the trouble this particular cast has planted. */
+.cover {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  font-style: italic;
+  line-height: 1.35;
+}
+.cover--hides { color: var(--safe); }
+.cover--shows { color: var(--alarm); }
+
+.seed--covered { color: var(--safe); }
+.seed--covered::before { content: '\2713\00a0'; }
+.seed--exposed { color: var(--alarm); }

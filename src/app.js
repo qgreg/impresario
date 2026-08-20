@@ -9,10 +9,13 @@
  * module owns the state and paints the screen, and that is all it does.
  */
 
-import { WORKS, TREATMENTS, HOOKS, BACKERS } from './data.js';
+import { WORKS, TREATMENTS, HOOKS, BACKERS, STAGINGS, PREPARATIONS } from './data.js';
 import {
   appraiseCasting, availableTo, fitFor, gradeCompany, impositionFor,
 } from './company.js';
+import {
+  applyProduction, previewFor, gradeProduction,
+} from './production.js';
 import {
   deriveBill, financing, gradeAppeal, gradeVolatility,
   AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
@@ -27,7 +30,9 @@ const state = {
   choice: { work: null, treatment: null, hook: null },
   backer: null,
   assigned: {},   // roleIndex -> performerId
-  step: 'work',   // work → treatment → hook → mount → casting → ready → open
+  production: { staging: null, preparation: null },
+  // work → treatment → hook → mount → casting → staging → preparation → ready → open
+  step: 'work',
 };
 
 /**
@@ -93,7 +98,7 @@ function paintStanding() {
   el.reputation.textContent = state.reputation === 0 ? 'unknown' : `${state.reputation > 0 ? '+' : ''}${state.reputation}`;
 }
 
-function paintBill(bill, casting) {
+function paintBill(bill, casting, production) {
   const billed = bill.title.length > 0;
   el.posterTitle.textContent = billed ? bill.title : 'Nothing is billed';
   el.posterTitle.classList.toggle('poster__title--empty', !billed);
@@ -105,7 +110,8 @@ function paintBill(bill, casting) {
   // a separate budget — it is the same money, and the player is entitled to see
   // the whole promise in one number.
   const casting_ = casting || { salary: 0, appeal: { crowd: 0, society: 0, critics: 0 }, volatility: 0 };
-  const outlay = bill.cost + casting_.salary;
+  const production_ = production || { cost: 0, appeal: { crowd: 0, society: 0, critics: 0 }, volatility: 0 };
+  const outlay = bill.cost + casting_.salary + production_.cost;
   const shortfall = Math.max(0, outlay - funds());
 
   el.cost.textContent = outlay === 0 ? '—' : `${outlay}g`;
@@ -113,10 +119,12 @@ function paintBill(bill, casting) {
   if (shortfall > 0) el.cost.textContent = `${outlay}g — ${shortfall} short`;
 
   const appeal = {};
-  for (const audience of AUDIENCES) appeal[audience] = bill.appeal[audience] + casting_.appeal[audience];
+  for (const audience of AUDIENCES) {
+    appeal[audience] = bill.appeal[audience] + casting_.appeal[audience] + production_.appeal[audience];
+  }
   paintMeters(appeal);
 
-  const volatility = bill.volatility + casting_.volatility;
+  const volatility = bill.volatility + casting_.volatility + production_.volatility;
   const things = volatility === 1 ? 'one thing will go wrong' : `${volatility} things will go wrong`;
   el.volatility.textContent = volatility === 0 && !bill.work
     ? '—'
@@ -185,7 +193,7 @@ function appealTags(part) {
 
 // ------------------------------------------------------------------ steps
 
-function paintChoice(bill, casting) {
+function paintChoice(bill, casting, production) {
   el.cards.replaceChildren();
 
   if (state.step === 'work') {
@@ -230,8 +238,10 @@ function paintChoice(bill, casting) {
 
   if (state.step === 'mount') return paintMount();
   if (state.step === 'casting') return paintCasting(casting);
-  if (state.step === 'ready') return paintReady(bill, casting);
-  if (state.step === 'open') return paintOpen(bill, casting);
+  if (state.step === 'staging') return paintStaging(casting);
+  if (state.step === 'preparation') return paintPreparation(casting);
+  if (state.step === 'ready') return paintReady(bill, casting, production);
+  if (state.step === 'open') return paintOpen(bill, casting, production);
 }
 
 /**
@@ -333,6 +343,28 @@ function appendSeeds(casting) {
 }
 
 /**
+ * The same list once a production has been chosen, but now each line says what
+ * became of it. A trouble that has been covered is not gone — it is handled,
+ * and the player paid for that, so they should be able to see what they bought.
+ */
+function appendProductionSeeds(production) {
+  if (!production.seeds.length) return;
+  const list = document.createElement('ul');
+  list.className = 'seeds';
+  for (const seed of production.seeds) {
+    const item = document.createElement('li');
+    item.className = `seed seed--${seed.state}`;
+    item.textContent = seed.state === 'covered'
+      ? `${seed.text} — covered`
+      : seed.state === 'exposed'
+        ? `${seed.text} — and everyone will see it`
+        : seed.text;
+    list.appendChild(item);
+  }
+  el.cards.appendChild(list);
+}
+
+/**
  * One role at a time, in order. The same single verb as the bill: read three
  * cards, tap one. What changes is that every card is now judged against the
  * part in front of it rather than in the abstract.
@@ -352,8 +384,8 @@ function paintCasting(casting) {
       appendSeeds(casting);
       return;
     }
-    state.step = 'ready';
-    return paintReady(currentBill(), casting);
+    state.step = 'staging';
+    return paintStaging(casting);
   }
 
   el.prompt.textContent = `Who plays the ${active.slot.role}?`;
@@ -402,27 +434,97 @@ const TEMPERAMENT_WORDS = {
   steady: 'steady',
 };
 
-function paintReady(bill, casting) {
-  const outlay = bill.cost + casting.salary;
+/**
+ * A card for a staging or a preparation, with the thing that makes this phase
+ * different attached: what it would do to the trouble *this* cast has planted.
+ * Compensation the player cannot see coming is not a decision, it is a die roll.
+ */
+function productionCard(part, casting, onSelect) {
+  const preview = previewFor(part, casting);
+  const tags = [];
+
+  for (const audience of AUDIENCES) {
+    const value = part.appeal?.[audience] ?? 0;
+    if (value !== 0) {
+      // Glyph as well as colour, matching the readout — the tag must still say
+      // which audience it means when the colour cannot be told apart.
+      const { glyph, name } = AUDIENCE_LABELS[audience];
+      tags.push({ kind: audience, text: `${glyph} ${name} ${value > 0 ? '+' : ''}${value}` });
+    }
+  }
+  if (part.volatility !== 0) {
+    tags.push({
+      kind: part.volatility > 0 ? 'risk' : 'quiet',
+      text: part.volatility > 0 ? `riskier by ${part.volatility}` : `calmer by ${-part.volatility}`,
+    });
+  }
+
+  const node = card(part.name, {
+    cost: part.cost === 0 ? 'free' : `${part.cost}g`,
+    note: part.note,
+    tags,
+    onSelect,
+  });
+
+  // Named, not summarised: "hides Kaufmann's Niece has never done this before"
+  // is the sentence that makes the choice legible.
+  for (const seed of preview.covers) {
+    const line = document.createElement('p');
+    line.className = 'cover cover--hides';
+    line.textContent = `Hides: ${seed.text}`;
+    node.appendChild(line);
+  }
+  for (const seed of preview.exposes) {
+    const line = document.createElement('p');
+    line.className = 'cover cover--shows';
+    line.textContent = `Puts on show: ${seed.text}`;
+    node.appendChild(line);
+  }
+
+  return node;
+}
+
+/** What the audience will actually be looking at. */
+function paintStaging(casting) {
+  el.prompt.textContent = 'What are they looking at?';
+  for (const staging of STAGINGS) {
+    el.cards.appendChild(productionCard(staging, casting, () => chooseStaging(staging)));
+  }
+}
+
+/** How ready the thing is. Rehearsal works on people; scenery does not. */
+function paintPreparation(casting) {
+  el.prompt.textContent = 'How ready are they?';
+  for (const preparation of PREPARATIONS) {
+    el.cards.appendChild(productionCard(preparation, casting, () => choosePreparation(preparation)));
+  }
+}
+
+function paintReady(bill, casting, production) {
+  const outlay = bill.cost + casting.salary + production.cost;
   const shortfall = Math.max(0, outlay - funds());
 
-  el.prompt.textContent = gradeCompany(casting);
+  el.prompt.textContent = gradeProduction(state.production, production.exposed.length);
 
   if (shortfall > 0) {
-    el.cards.appendChild(card('You cannot pay them', {
-      note: `${outlay}g promised and ${funds()}g in hand. Give somebody up, or find a cheaper bill.`,
+    el.cards.appendChild(card('You cannot pay for all this', {
+      note: `${outlay}g promised and ${funds()}g in hand. Give somebody up, or stage it more cheaply.`,
       className: 'card--quiet',
       onSelect: () => {},
     }));
   } else {
     el.cards.appendChild(card('Open the house', {
-      note: `${outlay}g in all — ${bill.cost}g on the bill and ${casting.salary}g in salaries.`,
+      note: `${outlay}g in all — ${bill.cost}g on the bill, ${casting.salary}g in salaries, ${production.cost}g on the production.`,
       className: 'card--mount',
       onSelect: open_,
     }));
   }
 
-  appendSeeds(casting);
+  appendProductionSeeds(production);
+  el.cards.appendChild(card('Stage it differently', {
+    className: 'card--quiet',
+    onSelect: () => { state.production = { staging: null, preparation: null }; state.step = 'staging'; render(); },
+  }));
 
   el.cards.appendChild(card('Start the bill again', {
     className: 'card--quiet',
@@ -431,14 +533,15 @@ function paintReady(bill, casting) {
 }
 
 /** The last two phases do not exist yet, so the run stops here honestly. */
-function paintOpen(bill, casting) {
+function paintOpen(bill, casting, production) {
+  const trouble = bill.volatility + casting.volatility + production.volatility;
   el.prompt.textContent = 'The house is open';
   el.cards.appendChild(card('The curtain is about to go up', {
-    note: `${casting.volatility + bill.volatility} things will go wrong tonight. The production phase and opening night are not built yet — try the follow spot at /spotlight.html to see where this is going.`,
+    note: `${trouble} things will go wrong tonight. Opening night is not built yet — try the follow spot at /spotlight.html to see where this is going.`,
     className: 'card--quiet',
     onSelect: () => {},
   }));
-  appendSeeds(casting);
+  appendProductionSeeds(production);
   if (state.backer) {
     el.cards.appendChild(card(`${state.backer.name} has your note of hand`, {
       note: state.backer.string,
@@ -460,6 +563,10 @@ function currentBill() {
 
 function currentCasting() {
   return appraiseCasting(currentBill(), state.assigned, { imposed: state.backer?.id ?? null });
+}
+
+function currentProduction(casting) {
+  return applyProduction(casting ?? currentCasting(), state.production);
 }
 
 /** The first role still empty — the one the player is being asked to fill. */
@@ -485,7 +592,24 @@ function assign(index, performerId) {
 
 function release(index) {
   delete state.assigned[index];
-  if (state.step === 'ready') state.step = 'casting';
+  // Taking a part back reopens everything downstream of it: a production was
+  // chosen to cover this particular cast, and it is no longer that cast.
+  if (state.step !== 'open') {
+    state.step = 'casting';
+    state.production = { staging: null, preparation: null };
+  }
+  render();
+}
+
+function chooseStaging(staging) {
+  state.production.staging = staging;
+  state.step = 'preparation';
+  render();
+}
+
+function choosePreparation(preparation) {
+  state.production.preparation = preparation;
+  state.step = 'ready';
   render();
 }
 
@@ -493,7 +617,8 @@ function release(index) {
 function open_() {
   const bill = currentBill();
   const casting = currentCasting();
-  state.capital = funds() - bill.cost - casting.salary;
+  const production = currentProduction(casting);
+  state.capital = funds() - bill.cost - casting.salary - production.cost;
   state.step = 'open';
   render();
 }
@@ -502,6 +627,7 @@ function reset() {
   state.choice = { work: null, treatment: null, hook: null };
   state.backer = null;
   state.assigned = {};
+  state.production = { staging: null, preparation: null };
   state.step = 'work';
   state.week++;
   render();
@@ -510,10 +636,11 @@ function reset() {
 function render() {
   const bill = currentBill();
   const casting = currentCasting();
+  const production = currentProduction(casting);
   paintStanding();
-  paintBill(bill, casting);
+  paintBill(bill, casting, production);
   paintSlots(casting);
-  paintChoice(bill, casting);
+  paintChoice(bill, casting, production);
 }
 
 render();
@@ -524,6 +651,9 @@ window.__debug = {
   get state() { return structuredClone({ ...state, choice: { ...state.choice } }); },
   get bill() { return currentBill(); },
   get casting() { return currentCasting(); },
+  get production() { return currentProduction(); },
+  stage(id) { chooseStaging(STAGINGS.find((s) => s.id === id)); },
+  prepare(id) { choosePreparation(PREPARATIONS.find((p) => p.id === id)); },
   cast(index, performerId) { assign(index, performerId); },
   pick(axis, id) {
     const table = { work: WORKS, treatment: TREATMENTS, hook: HOOKS }[axis];

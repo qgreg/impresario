@@ -33,6 +33,7 @@ styles.css        gaslight-and-velvet palette, portrait layout
 src/data.js       the content tables: works, treatments, hooks, backers, remarks
 src/bill.js       pure derivation — cost, appeal, volatility, roles, billing
 src/company.js    pure — fit, feuds, salaries, and the backer's imposed string
+src/production.js pure — staging and rehearsal folded over the cast's seeds
 src/app.js        state, painting, and the step machine for The Bill and casting
 
 spotlight.html    the follow-spot toy, standalone, depends on no other phase
@@ -41,6 +42,7 @@ src/spotlight.js  canvas, clock and pointer for the toy. Owns nothing else
 
 test/bill.test.js    unit tests, bare Node, no framework
 test/company.test.js the same, for casting
+test/production.test.js  the same, for staging and rehearsal
 test/follow.test.js  the same, for the spotlight
 ```
 
@@ -117,6 +119,22 @@ work can be cast under every treatment without anyone going out of their line.
 The earlier version of this caught opera and ballet being uncastable — two of
 six treatments were traps sprung on a choice made blind in phase one. Keep that
 check green whenever the roster or the works change.
+
+**Trouble is named, never summarised.** A cast plants *seeds* — typed troubles
+(`miscast`, `green`, `drink`, `feud`) each carrying the sentence that describes
+it. The production phase folds over those seeds and marks each one `covered`,
+`exposed`, or `open`. A staging must therefore say which of *this* cast's
+troubles it touches, on the card, before the player pays: compensation the
+player cannot see coming is not a decision, it is a die roll. Never replace a
+named seed with a numeric risk score.
+
+**Every seed kind must be coverable by something.** `production.test.js` asserts
+it. A trouble with no answer anywhere on the shelf is a punishment, not a
+choice.
+
+**Reopening a phase reopens everything downstream.** Taking a part back clears
+the production, because a staging was chosen to cover that particular cast and
+it is no longer that cast.
 
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.

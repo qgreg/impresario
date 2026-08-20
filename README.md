@@ -87,6 +87,35 @@ If a backer covered your shortfall, his string is a person: his niece is in the
 company whether she can act or not, and the show cannot open until she has a
 part.
 
+### The production
+
+The first phase you enter knowing something. The bill was committed to blind
+and the cast is whoever would take the parts — by now the boy has never done
+this before, the Ghost is a drunk, and two of them are not speaking.
+
+So staging is not a quality slider. Every choice **names the kinds of trouble it
+hides and the kinds it makes worse**, against the specific troubles this cast
+planted, and says so on the card before you pay:
+
+> **A Spectacle Machine** — 46g
+> *Sixty feet of hydraulics. Nobody will be watching the acting.*
+> Hides: The Wexford Boy has never done this before.
+
+> **Bare Boards and One Lamp** — 2g
+> *Nothing to hide behind. Everything rests on the acting.*
+> Puts on show: The Wexford Boy has never done this before.
+
+Same two problems, opposite decisions, twenty-two times the price. Exposure
+costs more than the trouble was worth on its own, so bare boards on a weak cast
+is a genuine gamble — and on a cast with nothing wrong with it, the same staging
+is simply cheap and the critics love it.
+
+Rehearsal is the other half, and the half that works on people rather than
+scenery. A week settles the green performer; a month makes even bad casting look
+deliberate; a stage manager in the wings settles the ones who quarrel and the
+ones who drink. Opening cold is always free, because a player who has spent
+everything must still be allowed to open.
+
 Being short of money never blocks you. It opens the drawer of people who will
 lend it, and every one of them wants something that costs more than the money
 did. That is the whole push-your-luck of the first phase, folded into the
