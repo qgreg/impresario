@@ -11,8 +11,11 @@
 
 import { WORKS, TREATMENTS, HOOKS, BACKERS } from './data.js';
 import {
+  appraiseCasting, availableTo, fitFor, gradeCompany, impositionFor,
+} from './company.js';
+import {
   deriveBill, financing, gradeAppeal, gradeVolatility,
-  AUDIENCES, AUDIENCE_LABELS,
+  AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
 } from './bill.js';
 
 const STARTING_CAPITAL = 120;
@@ -23,13 +26,25 @@ const state = {
   reputation: 0,
   choice: { work: null, treatment: null, hook: null },
   backer: null,
-  step: 'work',   // work → treatment → hook → mount → mounted
+  assigned: {},   // roleIndex -> performerId
+  step: 'work',   // work → treatment → hook → mount → casting → ready → open
 };
+
+/**
+ * Money is not taken at any point in the middle. The player commits to a bill
+ * and then to a cast, and the whole outlay leaves the account when the house
+ * opens — so the running total on screen is always the real size of what they
+ * have promised, rather than a balance that has already been quietly reduced.
+ */
+function funds() {
+  return state.capital + (state.backer ? state.backer.offers : 0);
+}
 
 const el = {
   capital: document.getElementById('capital'),
   week: document.getElementById('week'),
   reputation: document.getElementById('reputation'),
+  slots: document.getElementById('slots'),
   posterTitle: document.getElementById('poster-title'),
   posterRemark: document.getElementById('poster-remark'),
   cost: document.getElementById('cost'),
@@ -61,9 +76,11 @@ function paintMeters(appeal) {
       <span class="meter__bar"><span class="meter__fill"></span></span>
       <span class="meter__grade">${grade}</span>`;
     row.querySelector('.meter__who').textContent = name;
-    // Bars run 0–14; a negative appeal shows an empty bar and says "hostile",
-    // because a bar that grows leftward reads as a bug rather than as scorn.
-    const width = Math.max(0, Math.min(100, (value / 14) * 100));
+    // The bar runs to a whole production's worth of appeal, so a bill on its own
+    // sits low and filling the cast visibly fills it. A negative appeal shows an
+    // empty bar and says "hostile": a bar that grows leftward reads as a bug
+    // rather than as scorn.
+    const width = Math.max(0, Math.min(100, (value / APPEAL_CEILING) * 100));
     row.querySelector('.meter__fill').style.width = `${width}%`;
     row.setAttribute('aria-label', `${name}: ${grade}`);
     el.meters.appendChild(row);
@@ -76,7 +93,7 @@ function paintStanding() {
   el.reputation.textContent = state.reputation === 0 ? 'unknown' : `${state.reputation > 0 ? '+' : ''}${state.reputation}`;
 }
 
-function paintBill(bill) {
+function paintBill(bill, casting) {
   const billed = bill.title.length > 0;
   el.posterTitle.textContent = billed ? bill.title : 'Nothing is billed';
   el.posterTitle.classList.toggle('poster__title--empty', !billed);
@@ -84,15 +101,26 @@ function paintBill(bill) {
   el.posterRemark.hidden = !bill.remark;
   if (bill.remark) el.posterRemark.textContent = bill.remark;
 
-  const money = financing(bill, state.capital, BACKERS);
-  el.cost.textContent = bill.cost === 0 ? '—' : `${bill.cost}g`;
-  el.cost.classList.toggle('readout__value--short', money.shortfall > 0);
-  if (money.shortfall > 0) el.cost.textContent = `${bill.cost}g — ${money.shortfall} short`;
+  // Salaries join the readout the moment casting begins, because a cast is not
+  // a separate budget — it is the same money, and the player is entitled to see
+  // the whole promise in one number.
+  const casting_ = casting || { salary: 0, appeal: { crowd: 0, society: 0, critics: 0 }, volatility: 0 };
+  const outlay = bill.cost + casting_.salary;
+  const shortfall = Math.max(0, outlay - funds());
 
-  paintMeters(bill.appeal);
-  el.volatility.textContent = bill.volatility === 0 && !bill.work
+  el.cost.textContent = outlay === 0 ? '—' : `${outlay}g`;
+  el.cost.classList.toggle('readout__value--short', shortfall > 0);
+  if (shortfall > 0) el.cost.textContent = `${outlay}g — ${shortfall} short`;
+
+  const appeal = {};
+  for (const audience of AUDIENCES) appeal[audience] = bill.appeal[audience] + casting_.appeal[audience];
+  paintMeters(appeal);
+
+  const volatility = bill.volatility + casting_.volatility;
+  const things = volatility === 1 ? 'one thing will go wrong' : `${volatility} things will go wrong`;
+  el.volatility.textContent = volatility === 0 && !bill.work
     ? '—'
-    : `${gradeVolatility(bill.volatility)} · ${bill.volatility} things will go wrong`;
+    : `${gradeVolatility(volatility)} · ${volatility === 0 ? 'nothing will go wrong' : things}`;
 }
 
 /** One tappable option. Everything the player needs to decide is on the face. */
@@ -157,7 +185,7 @@ function appealTags(part) {
 
 // ------------------------------------------------------------------ steps
 
-function paintChoice() {
+function paintChoice(bill, casting) {
   el.cards.replaceChildren();
 
   if (state.step === 'work') {
@@ -201,7 +229,9 @@ function paintChoice() {
   }
 
   if (state.step === 'mount') return paintMount();
-  if (state.step === 'mounted') return paintMounted();
+  if (state.step === 'casting') return paintCasting(casting);
+  if (state.step === 'ready') return paintReady(bill, casting);
+  if (state.step === 'open') return paintOpen(bill, casting);
 }
 
 /**
@@ -245,15 +275,169 @@ function paintMount() {
   }));
 }
 
-/** The other three phases do not exist yet, so the run stops here honestly. */
-function paintMounted() {
-  const bill = currentBill();
-  el.prompt.textContent = 'The bill is set';
-  el.cards.appendChild(card('The company is waiting', {
-    note: `${bill.roles.map((r) => r.label).join(' · ')}. Casting is not built yet — this is where phase two begins.`,
+/**
+ * The roles, as a strip that stays visible while one of them is being filled.
+ * Casting blind to what you have already done would hide the feuds and the
+ * mismatches until they were too expensive to trade away.
+ */
+function paintSlots(casting) {
+  const showing = state.step === 'casting' || state.step === 'ready' || state.step === 'open';
+  el.slots.hidden = !showing;
+  if (!showing) return;
+
+  el.slots.replaceChildren();
+  const active = activeSlot(casting);
+  const imposition = impositionFor(state.backer?.id ?? null);
+
+  for (const entry of casting.slots) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    const wrong = entry.fit?.level === 'wrong';
+    const imposed = entry.performer && imposition && entry.performer.id === imposition.performer.id;
+    button.className = [
+      'slot',
+      entry === active && state.step === 'casting' ? 'slot--active' : '',
+      wrong ? 'slot--wrong' : '',
+      imposed ? 'slot--imposed' : '',
+    ].filter(Boolean).join(' ');
+
+    const role = document.createElement('span');
+    role.className = 'slot__role';
+    role.textContent = entry.slot.label;
+    const who = document.createElement('span');
+    who.className = `slot__who${entry.performer ? '' : ' slot__who--empty'}`;
+    who.textContent = entry.performer ? entry.performer.name : 'nobody yet';
+    button.append(role, who);
+
+    // Only during casting can a part be taken back; once the house is open the
+    // strip is a record rather than a control.
+    if (entry.performer && state.step !== 'open') {
+      button.addEventListener('click', () => release(entry.index));
+    }
+    el.slots.appendChild(button);
+  }
+}
+
+/** Everything the cast has planted for opening night, said plainly. */
+function appendSeeds(casting) {
+  if (!casting.seeds.length) return;
+  const list = document.createElement('ul');
+  list.className = 'seeds';
+  for (const seed of casting.seeds) {
+    const item = document.createElement('li');
+    item.className = 'seed';
+    item.textContent = seed.text;
+    list.appendChild(item);
+  }
+  el.cards.appendChild(list);
+}
+
+/**
+ * One role at a time, in order. The same single verb as the bill: read three
+ * cards, tap one. What changes is that every card is now judged against the
+ * part in front of it rather than in the abstract.
+ */
+function paintCasting(casting) {
+  const active = activeSlot(casting);
+
+  if (!active) {
+    // Every part filled — but a backer's string may still be outstanding.
+    if (!casting.complete && casting.imposition) {
+      el.prompt.textContent = 'Your backer is still owed';
+      el.cards.appendChild(card(casting.imposition.performer.name, {
+        note: `${state.backer.string} She is not in the company. Give up a part for her.`,
+        className: 'card--quiet',
+        onSelect: () => {},
+      }));
+      appendSeeds(casting);
+      return;
+    }
+    state.step = 'ready';
+    return paintReady(currentBill(), casting);
+  }
+
+  el.prompt.textContent = `Who plays the ${active.slot.role}?`;
+
+  // Ordered by suitability. Casting against type stays legal and stays visible,
+  // but it belongs at the bottom of the list — making the player scroll past
+  // eight people who physically cannot do the part is a tax, not a decision.
+  const FIT_ORDER = { ideal: 0, passable: 1, wrong: 2 };
+  const offered = availableTo(state.backer?.id ?? null, state.assigned)
+    .map((performer) => ({ performer, fit: fitFor(performer, active.slot) }))
+    .sort((a, b) =>
+      FIT_ORDER[a.fit.level] - FIT_ORDER[b.fit.level] ||
+      b.performer.talent - a.performer.talent ||
+      a.performer.salary - b.performer.salary);
+
+  for (const { performer, fit } of offered) {
+    const tags = [
+      { kind: 'critics', text: `talent ${performer.talent}` },
+      { kind: 'crowd', text: `fame ${performer.fame}` },
+    ];
+    if (fit.level === 'ideal') tags.push({ kind: 'society', text: 'born to it' });
+    if (fit.level === 'wrong') tags.push({ kind: 'risk', text: 'wrong discipline' });
+    if (performer.temperament !== 'steady') {
+      tags.push({ kind: 'risk', text: TEMPERAMENT_WORDS[performer.temperament] });
+    }
+
+    el.cards.appendChild(card(performer.name, {
+      cost: performer.salary === 0 ? 'free' : `${performer.salary}g`,
+      note: fit.level === 'wrong' ? `${fit.why} ${performer.note}` : performer.note,
+      tags,
+      className: fit.level === 'wrong' ? 'card--quiet' : '',
+      onSelect: () => assign(active.index, performer.id),
+    }));
+  }
+
+  appendSeeds(casting);
+}
+
+/** The words shown on a performer's card for what they are likely to do to you. */
+const TEMPERAMENT_WORDS = {
+  vain: 'vain',
+  temperamental: 'temperamental',
+  drunk: 'unreliable',
+  green: 'never done it',
+  steady: 'steady',
+};
+
+function paintReady(bill, casting) {
+  const outlay = bill.cost + casting.salary;
+  const shortfall = Math.max(0, outlay - funds());
+
+  el.prompt.textContent = gradeCompany(casting);
+
+  if (shortfall > 0) {
+    el.cards.appendChild(card('You cannot pay them', {
+      note: `${outlay}g promised and ${funds()}g in hand. Give somebody up, or find a cheaper bill.`,
+      className: 'card--quiet',
+      onSelect: () => {},
+    }));
+  } else {
+    el.cards.appendChild(card('Open the house', {
+      note: `${outlay}g in all — ${bill.cost}g on the bill and ${casting.salary}g in salaries.`,
+      className: 'card--mount',
+      onSelect: open_,
+    }));
+  }
+
+  appendSeeds(casting);
+
+  el.cards.appendChild(card('Start the bill again', {
+    className: 'card--quiet',
+    onSelect: reset,
+  }));
+}
+
+/** The last two phases do not exist yet, so the run stops here honestly. */
+function paintOpen(bill, casting) {
+  el.prompt.textContent = 'The house is open';
+  el.cards.appendChild(card('The curtain is about to go up', {
+    note: `${casting.volatility + bill.volatility} things will go wrong tonight. The production phase and opening night are not built yet — try the follow spot at /spotlight.html to see where this is going.`,
     className: 'card--quiet',
     onSelect: () => {},
   }));
+  appendSeeds(casting);
   if (state.backer) {
     el.cards.appendChild(card(`${state.backer.name} has your note of hand`, {
       note: state.backer.string,
@@ -273,6 +457,15 @@ function currentBill() {
   return deriveBill(state.choice);
 }
 
+function currentCasting() {
+  return appraiseCasting(currentBill(), state.assigned, { imposed: state.backer?.id ?? null });
+}
+
+/** The first role still empty — the one the player is being asked to fill. */
+function activeSlot(casting) {
+  return casting.slots.find((s) => !s.performer) ?? null;
+}
+
 function choose(axis, value, nextStep) {
   state.choice[axis] = value;
   state.step = nextStep;
@@ -280,26 +473,46 @@ function choose(axis, value, nextStep) {
 }
 
 function mount() {
+  state.step = 'casting';
+  render();
+}
+
+function assign(index, performerId) {
+  state.assigned[index] = performerId;
+  render();
+}
+
+function release(index) {
+  delete state.assigned[index];
+  if (state.step === 'ready') state.step = 'casting';
+  render();
+}
+
+/** The house opens, and the whole promise finally leaves the account. */
+function open_() {
   const bill = currentBill();
-  state.capital -= bill.cost;
-  if (state.backer) state.capital += state.backer.offers;
-  state.step = 'mounted';
+  const casting = currentCasting();
+  state.capital = funds() - bill.cost - casting.salary;
+  state.step = 'open';
   render();
 }
 
 function reset() {
   state.choice = { work: null, treatment: null, hook: null };
   state.backer = null;
+  state.assigned = {};
   state.step = 'work';
   state.week++;
   render();
 }
 
 function render() {
+  const bill = currentBill();
+  const casting = currentCasting();
   paintStanding();
-  paintBill(currentBill());
-  paintChoice();
-  el.cards.scrollTop = 0;
+  paintBill(bill, casting);
+  paintSlots(casting);
+  paintChoice(bill, casting);
 }
 
 render();
@@ -309,6 +522,8 @@ render();
 window.__debug = {
   get state() { return structuredClone({ ...state, choice: { ...state.choice } }); },
   get bill() { return currentBill(); },
+  get casting() { return currentCasting(); },
+  cast(index, performerId) { assign(index, performerId); },
   pick(axis, id) {
     const table = { work: WORKS, treatment: TREATMENTS, hook: HOOKS }[axis];
     const found = table?.find((entry) => entry.id === id);

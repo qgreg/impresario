@@ -123,12 +123,26 @@ export function financing(bill, capital, backers) {
  * Grades exist so the board can say something in words as well as in numbers —
  * nothing here is ever signalled by colour alone.
  */
+/**
+ * The scale spans a whole production, not a bill on its own.
+ *
+ * These thresholds were first set against the bill alone, where anything above
+ * 8 was remarkable. Once a cast was attached they were useless: four performers
+ * contribute roughly twice what the bill does, so every audience pegged at
+ * 'clamouring' the moment the last part was filled and the meters stopped
+ * saying anything.
+ *
+ * A bill with nobody in it now reads low on purpose. That is honest — a bill is
+ * a proposal, and it is the company that makes people come.
+ */
+export const APPEAL_CEILING = 30;
+
 export function gradeAppeal(value) {
-  if (value >= 8) return 'clamouring';
-  if (value >= 5) return 'keen';
-  if (value >= 2) return 'curious';
+  if (value >= 22) return 'clamouring';
+  if (value >= 15) return 'keen';
+  if (value >= 8) return 'curious';
   if (value >= 0) return 'indifferent';
-  if (value >= -3) return 'cool';
+  if (value >= -5) return 'cool';
   return 'hostile';
 }
 

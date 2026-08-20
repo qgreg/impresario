@@ -119,11 +119,17 @@ check('an empty bill derives without throwing', deriveBill().complete === false)
 // --- words, not just numbers ------------------------------------------------
 
 check('appeal is graded in words as well as numbers',
-  gradeAppeal(9) === 'clamouring' && gradeAppeal(0) === 'indifferent' && gradeAppeal(-6) === 'hostile');
+  gradeAppeal(24) === 'clamouring' && gradeAppeal(0) === 'indifferent' && gradeAppeal(-8) === 'hostile');
+// The scale must span a whole production. Calibrated against the bill alone it
+// pegged at 'clamouring' the moment a cast was attached, and said nothing after.
+check('a bill with nobody in it cannot already be clamouring',
+  gradeAppeal(11) !== 'clamouring', gradeAppeal(11));
+check('and a full production can reach the top of the scale',
+  gradeAppeal(26) === 'clamouring');
 check('volatility is graded in words too',
   gradeVolatility(0) === 'orderly' && gradeVolatility(10) === 'suicidal');
 check('every grade boundary returns something',
-  [-9, -3, 0, 2, 5, 8, 20].every((v) => typeof gradeAppeal(v) === 'string') &&
+  [-20, -9, -3, 0, 2, 8, 15, 22, 40].every((v) => typeof gradeAppeal(v) === 'string') &&
   [0, 2, 4, 6, 8, 20].every((v) => typeof gradeVolatility(v) === 'string'));
 
 // --- the content tables themselves ------------------------------------------

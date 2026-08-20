@@ -278,3 +278,49 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* --------------------------------------------------------------- the slots */
+
+/* The roles as a strip of chips, so the whole cast stays visible while one part
+   is being filled. Casting blind to what you have already done would make the
+   feuds and the mismatches invisible until it was too late to trade them. */
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding-bottom: 0.15rem;
+}
+.slots[hidden] { display: none; }
+
+.slot {
+  flex: 1 1 auto;
+  min-width: 45%;
+  min-height: 2.4rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(154, 139, 118, 0.32);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.slot__role {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+.slot__who { display: block; font-size: 0.85rem; }
+.slot__who--empty { color: var(--ash); font-style: italic; }
+
+.slot--active { border-color: var(--gold); background: rgba(122, 34, 49, 0.28); }
+.slot--wrong { border-color: var(--alarm); }
+.slot--wrong .slot__who { color: var(--alarm); }
+.slot--imposed { border-style: dashed; }
+
+/* Warnings the cast has planted for opening night. */
+.seeds { list-style: none; margin: 0.1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.seed { font-size: 0.74rem; color: var(--alarm); font-style: italic; }
+.seed::before { content: '\2020\00a0'; }

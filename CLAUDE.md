@@ -32,14 +32,16 @@ index.html        the whole game's markup — one screen, repainted
 styles.css        gaslight-and-velvet palette, portrait layout
 src/data.js       the content tables: works, treatments, hooks, backers, remarks
 src/bill.js       pure derivation — cost, appeal, volatility, roles, billing
-src/app.js        state, painting, and the step machine for The Bill
+src/company.js    pure — fit, feuds, salaries, and the backer's imposed string
+src/app.js        state, painting, and the step machine for The Bill and casting
 
 spotlight.html    the follow-spot toy, standalone, depends on no other phase
 src/follow.js     pure — lamp physics, the performer's business, the grade
 src/spotlight.js  canvas, clock and pointer for the toy. Owns nothing else
 
-test/bill.test.js   unit tests, bare Node, no framework
-test/follow.test.js the same, for the spotlight
+test/bill.test.js    unit tests, bare Node, no framework
+test/company.test.js the same, for casting
+test/follow.test.js  the same, for the spotlight
 ```
 
 `src/app.js` owns all state. Everything else is a pure function it calls.
@@ -96,6 +98,14 @@ Preserve that when adding any new readout.
 any hook. The game does not curate combinations — it comments on notable ones
 through `REMARKS` in `data.js`. Adding content means adding to a table, never
 adding a special case to `bill.js`.
+
+**Assert that a choice is never a dead end.** `company.test.js` checks every
+work can be cast under every treatment without miscasting — which caught opera
+and ballet being uncastable, because the roster held three singers and two
+dancers against treatments that demand four of a discipline. Two of the six
+treatments were traps sprung on a choice made blind in phase one. Scarcity of
+the right bodies is worth keeping, but as a money problem, never an
+impossibility.
 
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.

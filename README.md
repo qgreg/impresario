@@ -50,10 +50,31 @@ games go to die.
 | Phase | The question | Texture | Status |
 |---|---|---|---|
 | **The Bill** | What are we doing, and dare we? | Commitment, made blind | **playable** |
-| **The Company** | Who can actually carry this? | Combination, fit, ego | not built |
+| **The Company** | Who can actually carry this? | Combination, fit, ego | **playable** |
 | **The Production** | How do I cover what I've got? | Compensation, made informed | not built |
 | **Opening Night** | It is going wrong — what now? | Improvisation, live | **toy playable** |
 | *The Notices* | Was that hubris or genius? | *Epilogue, not a phase* | not built |
+
+### The company
+
+Casting asks one question the bill cannot: *who can carry **this**?* A ballet
+wants dancers whoever wrote the play, so a magnificent singer is simply wrong
+for the part — allowed, but priced. Casting against type is never forbidden,
+because sometimes it is the right price.
+
+The people who can actually do it are vain, drunk, or both, and the steady ones
+are nobody the public has heard of. **Fame and talent are separate currencies**:
+fame sells tickets to people who have not read a review, talent is what the
+critics are counting. A famous mediocrity and an unknown genius pull the three
+audiences in different directions.
+
+Two proud performers on one bill will not share a curtain call. Three of them is
+three quarrels, not one and a half. Everything a cast plants is shown plainly
+while you are casting, and grows two phases later on opening night.
+
+If a backer covered your shortfall, his string is a person: his niece is in the
+company whether she can act or not, and the show cannot open until she has a
+part.
 
 Being short of money never blocks you. It opens the drawer of people who will
 lend it, and every one of them wants something that costs more than the money
