@@ -188,9 +188,22 @@ A show can make money and cost you your reputation, and a critical triumph can
 still ruin you. That tension is the reason there are three audiences rather than
 one score.
 
-If you cannot afford the cheapest work on the shelf, the season ends. A broke
-impresario tapping through bills they can never mount is not a loss, it is a
-hang.
+### Running out
+
+The cheapest evening in London costs **29 guineas** — a play, the smallest cast
+it can be done with, bare boards, and no rehearsal. That figure is computed from
+the shelf rather than written down, so adding a cheaper play moves it on its own.
+
+Below it, you are ruined, and the season ends with how many weeks you lasted.
+
+Money can be borrowed against the shortfall at any point up to the moment the
+house opens, including after the cast has been hired — which is where a
+shortfall usually appears, since salaries are the larger half of the outlay.
+
+But **there are three people in London who will advance an impresario anything,
+and each of them will do it once.** Nobody funds the same man's third failure.
+When the last of them has been spent and the purse is under the floor, that is
+the end of it.
 
 Being short of money never blocks you. It opens the drawer of people who will
 lend it, and every one of them wants something that costs more than the money

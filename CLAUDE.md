@@ -193,6 +193,28 @@ lying over the board catching every tap.
 ink on that ground is muddy at arm's length in daylight. The card carries a
 radial dark scrim behind it; do not remove it to show more of the fold.
 
+**Ruin is measured against a whole production, and the figure is computed.**
+`cheapestProduction` searches the shelf for the least a complete evening can
+cost — play, smallest cast, cheapest staging, no rehearsal. The first version
+compared the purse to the cheapest *work* (18g against a real floor of 29g), so
+an impresario with twenty-five guineas was told they were solvent, mounted a
+bill they could afford, and then could not pay anybody: not ruined, not playing,
+just stuck. Never hard-code this number; it re-derives from the data.
+
+**Check ruin before a week begins, not only after a night.** Ruin found at the
+notices is a verdict; ruin found three screens into a bill that cannot be paid
+for is a dead end the player walked into on our invitation.
+
+**Backers are finite, and that is what makes ruin reachable.** Each of the three
+will advance money once per season. Left unlimited, the deepest pocket (100g)
+against the floor (29g) meant the player could never lose — a bottomless backer
+is a bottomless season and no losing condition at all.
+
+**Money must be borrowable at the moment the shortfall appears.** Salaries are
+the larger half of the outlay, so the gap that strands a player shows up at
+casting, not at the bill. Backers are offered at the bill *and* at the last
+screen before the house opens.
+
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.
 

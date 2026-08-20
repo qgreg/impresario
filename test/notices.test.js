@@ -7,13 +7,14 @@
  * than leaving the player tapping through bills they can never afford.
  */
 import {
-  settleShow, rollMishaps, noticesFor, gradeStanding, isRuined,
+  settleShow, rollMishaps, noticesFor, gradeStanding, isRuined, cheapestProduction,
   WORTH, MISHAP_CHANCE, MISHAP_DAMAGE, CRITIC_EXPECTATION, STANDING_STEP,
 } from '../src/notices.js';
 import { deriveBill } from '../src/bill.js';
 import { appraiseCasting } from '../src/company.js';
 import { applyProduction } from '../src/production.js';
-import { WORKS, TREATMENTS, HOOKS, STAGINGS, PREPARATIONS } from '../src/data.js';
+import { rolesOf, costOf } from '../src/bill.js';
+import { WORKS, TREATMENTS, HOOKS, STAGINGS, PREPARATIONS, PERFORMERS, BACKERS } from '../src/data.js';
 
 const failures = [];
 function check(label, condition, detail = '') {
@@ -160,10 +161,49 @@ check('a tidy night does not', noticesFor(appeal, 1).every((n) => !/disasters/.t
 // only spend money left the game unplayable after one production: with no income
 // there was no week two, which reads to a player as being stuck.
 
+// The ruin line has to be the cost of a whole *production*. Measured against
+// the cheapest work instead, an impresario with twenty-five guineas was told
+// they were solvent, mounted a bill they could afford, and then could not pay
+// anybody — not ruined, not playing, just stuck.
 {
-  const cheapest = Math.min(...WORKS.map((w) => w.cost));
+  const tables = {
+    works: WORKS, treatments: TREATMENTS, hooks: HOOKS,
+    performers: PERFORMERS, stagings: STAGINGS, preparations: PREPARATIONS,
+  };
+  const floor = cheapestProduction(tables, rolesOf, costOf);
+
+  check('the floor is a real figure derived from the shelf',
+    Number.isFinite(floor) && floor > 0, `${floor}g`);
+  check('and it is a whole production, not just a play off the shelf',
+    floor > Math.min(...WORKS.map((w) => w.cost)),
+    `${floor}g against a ${Math.min(...WORKS.map((w) => w.cost))}g work`);
+
+  // The floor must actually be reachable: some real combination has to cost it,
+  // or the game declares ruin above a price nobody could ever have paid.
+  let cheapestReal = Infinity;
+  const freeHook = HOOKS.reduce((a, h) => (h.cost < a.cost ? h : a));
+  const wages = PERFORMERS.filter((p) => !p.imposed).map((p) => p.salary).sort((a, b) => a - b);
+  for (const work of WORKS) for (const treatment of TREATMENTS) {
+    const roles = rolesOf(work, treatment).length;
+    const cast = wages.slice(0, roles).reduce((sum, w) => sum + w, 0);
+    cheapestReal = Math.min(cheapestReal, costOf(work, treatment, freeHook) + cast
+      + Math.min(...STAGINGS.map((s) => s.cost)) + Math.min(...PREPARATIONS.map((p) => p.cost)));
+  }
+  check('some real production actually costs exactly the floor',
+    floor === cheapestReal, `${floor}g against ${cheapestReal}g`);
+
   check('ruin is recognised rather than left as an unplayable screen',
-    isRuined(cheapest - 1, cheapest) && !isRuined(cheapest, cheapest));
+    isRuined(floor - 1, floor) && !isRuined(floor, floor));
+
+  // Starting capital must comfortably clear it, or week one is a coin toss.
+  check('an impresario begins the season able to open something',
+    !isRuined(120, floor), `120g against a ${floor}g floor`);
+
+  // And the deepest pocket in town has to matter, or borrowing is decorative.
+  const deepest = Math.max(0, ...BACKERS.map((b) => b.offers));
+  check('a backer can keep a nearly-broke impresario in business',
+    deepest > 0 && isRuined(floor - 1, floor) && !isRuined(floor - 1 + deepest, floor),
+    `deepest pocket ${deepest}g`);
 }
 
 {

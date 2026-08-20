@@ -168,12 +168,54 @@ export function gradeStanding(standing) {
 }
 
 /**
+ * The least a complete production can possibly cost.
+ *
+ * Computed rather than guessed, because guessing it wrong is the whole bug. The
+ * first version of the ruin test compared the purse to the cheapest *work* on
+ * the shelf — eighteen guineas — but a work is not a production. It needs a cast
+ * and something to stand in front of, and the true floor turns out to be well
+ * over that. An impresario with twenty-five guineas was told they were fine,
+ * mounted a bill they could afford, and then could not pay anybody: not ruined,
+ * not playing, just stuck.
+ *
+ * The search is exhaustive because the shelf is small, and it re-derives itself
+ * from the data — so adding a cheaper play or a dearer floor cannot leave this
+ * quietly out of date.
+ *
+ * @param {object} tables { works, treatments, hooks, performers, stagings, preparations }
+ * @param {Function} rolesOf  from bill.js — how a treatment reshapes the cast list
+ * @param {Function} costOf   from bill.js — what a bill costs
+ */
+export function cheapestProduction(tables, rolesOf, costOf) {
+  const { works, treatments, hooks, performers, stagings, preparations } = tables;
+  const freeHook = hooks.reduce((cheapest, hook) => (hook.cost < cheapest.cost ? hook : cheapest));
+  const set = Math.min(...stagings.map((s) => s.cost));
+  const rehearsal = Math.min(...preparations.map((p) => p.cost));
+
+  // Anyone a backer imposes is not somebody the impresario can choose to hire.
+  const hireable = performers.filter((p) => !p.imposed).map((p) => p.salary).sort((a, b) => a - b);
+
+  let floor = Infinity;
+  for (const work of works) {
+    for (const treatment of treatments) {
+      const roles = rolesOf(work, treatment).length;
+      if (roles > hireable.length) continue;
+      const wages = hireable.slice(0, roles).reduce((sum, salary) => sum + salary, 0);
+      floor = Math.min(floor, costOf(work, treatment, freeHook) + wages + set + rehearsal);
+    }
+  }
+  return Number.isFinite(floor) ? floor : 0;
+}
+
+/**
  * Whether another show is possible at all.
  *
  * A season has to be able to end, or a broke impresario simply taps through
  * bills they cannot afford forever — which is not a loss, it is a hang. Ruin is
  * the real losing condition and it is worth naming.
+ *
+ * `floor` must be the cost of a whole production, not of a bill.
  */
-export function isRuined(capital, cheapestBill) {
-  return capital < cheapestBill;
+export function isRuined(capital, floor) {
+  return capital < floor;
 }

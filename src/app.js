@@ -9,27 +9,64 @@
  * module owns the state and paints the screen, and that is all it does.
  */
 
-import { WORKS, TREATMENTS, HOOKS, BACKERS, STAGINGS, PREPARATIONS } from './data.js';
+import { WORKS, TREATMENTS, HOOKS, BACKERS, STAGINGS, PREPARATIONS, PERFORMERS } from './data.js';
 import {
   appraiseCasting, availableTo, fitFor, gradeCompany, impositionFor,
 } from './company.js';
 import {
   applyProduction, previewFor, gradeProduction,
 } from './production.js';
-import { settleShow, gradeStanding, isRuined } from './notices.js';
+import { settleShow, gradeStanding, isRuined, cheapestProduction } from './notices.js';
 import { buildNight, gradeNight, crisisCount } from './night.js';
 import { runNight } from './openingnight.js';
 import {
-  deriveBill, financing, gradeAppeal, gradeVolatility,
+  deriveBill, financing, gradeAppeal, gradeVolatility, rolesOf, costOf,
   AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
 } from './bill.js';
 
 const STARTING_CAPITAL = 120;
 
+/**
+ * The least a whole production can cost, derived from the shelf rather than
+ * guessed at. Below this an impresario cannot open anything, whatever they
+ * choose, so it is the line ruin is measured against.
+ */
+const RUIN_FLOOR = cheapestProduction(
+  { works: WORKS, treatments: TREATMENTS, hooks: HOOKS, performers: PERFORMERS, stagings: STAGINGS, preparations: PREPARATIONS },
+  rolesOf,
+  costOf,
+);
+
+/**
+ * Money is finite, and so is patience.
+ *
+ * There are three people in London who will advance an impresario anything, and
+ * each of them will do it once. Without that, ruin was unreachable: the deepest
+ * pocket in town is a hundred guineas against a floor of thirty, so a bottomless
+ * backer meant a bottomless season and no losing condition at all.
+ *
+ * Spending them one at a time is also the truthful version. Nobody funds the
+ * same man's third failure.
+ */
+function backersLeft() {
+  return BACKERS.filter((backer) => !state.spentBackers.includes(backer.id));
+}
+
+function deepestPocket() {
+  return Math.max(0, ...backersLeft().map((backer) => backer.offers));
+}
+
+/** Take the money, and use up the goodwill along with it. */
+function takeBacker(backer) {
+  state.backer = backer;
+  if (!state.spentBackers.includes(backer.id)) state.spentBackers.push(backer.id);
+}
+
 const state = {
   capital: STARTING_CAPITAL,
   week: 1,
   reputation: 0,
+  spentBackers: [],   // each of them will do it once, and once only
   choice: { work: null, treatment: null, hook: null },
   backer: null,
   assigned: {},   // roleIndex -> performerId
@@ -283,6 +320,7 @@ function paintChoice(bill, casting, production) {
     return;
   }
 
+  if (state.step === 'ruined') return paintRuined();
   if (state.step === 'mount') return paintMount();
   if (state.step === 'casting') return paintCasting(casting);
   if (state.step === 'staging') return paintStaging(casting);
@@ -309,12 +347,12 @@ function paintMount() {
     }));
   } else {
     el.prompt.textContent = `You are ${money.shortfall}g short. Somebody will lend it.`;
-    for (const backer of money.offers) {
+    for (const backer of money.offers.filter((b) => !state.spentBackers.includes(b.id))) {
       el.cards.appendChild(card(backer.name, {
         cost: `${backer.offers}g`,
         note: backer.string,
         className: 'card--backer',
-        onSelect: () => { state.backer = backer; mount(); },
+        onSelect: () => { takeBacker(backer); mount(); },
       }));
     }
     if (!money.offers.length) {
@@ -559,6 +597,30 @@ function paintReady(bill, casting, production) {
       className: 'card--quiet',
       onSelect: () => {},
     }));
+
+    // Money could only be borrowed against the *bill*, but the bill is the
+    // small half of the outlay — the shortfall that actually strands a player
+    // appears once the cast is hired, three screens later, and there was no way
+    // back to a backer from here. An impresario short at the last minute goes
+    // looking for money; that is most of the job.
+    if (!state.backer) {
+      const willing = backersLeft().filter((backer) => backer.offers >= shortfall);
+      for (const backer of willing) {
+        el.cards.appendChild(card(backer.name, {
+          cost: `${backer.offers}g`,
+          note: `${backer.string} It would cover the ${shortfall}g.`,
+          className: 'card--backer',
+          onSelect: () => { takeBacker(backer); render(); },
+        }));
+      }
+      if (!willing.length) {
+        el.cards.appendChild(card('Nobody will advance it', {
+          note: 'Not at this hour and not at that price. Something has to go.',
+          className: 'card--quiet',
+          onSelect: () => {},
+        }));
+      }
+    }
   } else {
     el.cards.appendChild(card('Open the house', {
       note: `${outlay}g in all — ${bill.cost}g on the bill, ${casting.salary}g in salaries, ${production.cost}g on the production.`,
@@ -654,17 +716,8 @@ function paintOpen(bill, casting, production) {
   // A season has to be able to end. Without this a broke impresario taps
   // through bills they can never afford for ever, which is not a loss — it is
   // a hang, and it is what being "stuck" actually looked like.
-  const cheapest = Math.min(...WORKS.map((w) => w.cost));
-  if (isRuined(state.capital, cheapest)) {
-    el.cards.appendChild(card('You are ruined', {
-      note: `${state.capital}g will not mount anything, and nobody in this town will advance you another penny. You lasted ${state.week} week${state.week === 1 ? '' : 's'}.`,
-      className: 'card--quiet',
-      onSelect: () => {},
-    }));
-    el.cards.appendChild(card('Begin again', {
-      className: 'card--mount',
-      onSelect: beginSeason,
-    }));
+  if (isRuined(state.capital + deepestPocket(), RUIN_FLOOR)) {
+    appendRuin();
     return;
   }
 
@@ -674,11 +727,38 @@ function paintOpen(bill, casting, production) {
   }));
 }
 
+/**
+ * The end of a season, said plainly and in one place.
+ *
+ * The cheapest possible evening is RUIN_FLOOR guineas and the deepest pocket in
+ * town will advance DEEPEST_POCKET more; below the two together, nothing on the
+ * shelf can be opened by any combination of choices.
+ */
+function appendRuin() {
+  el.cards.appendChild(card('You are ruined', {
+    note: `${state.capital}g will not mount anything — the cheapest evening in London runs to ${RUIN_FLOOR}g, and everyone who would once have advanced you the difference has done it already. You lasted ${state.week} week${state.week === 1 ? '' : 's'}.`,
+    className: 'card--quiet',
+    onSelect: () => {},
+  }));
+  el.cards.appendChild(card('Begin again', {
+    className: 'card--mount',
+    onSelect: beginSeason,
+  }));
+}
+
+/** Reached when a week begins that cannot possibly be finished. */
+function paintRuined() {
+  el.prompt.textContent = 'The end of it';
+  appendRuin();
+}
+
 /** A fresh season: back to the starting purse and no reputation at all. */
 function beginSeason() {
   state.capital = STARTING_CAPITAL;
   state.reputation = 0;
   state.week = 0;
+  state.backer = null;
+  state.spentBackers = [];
   reset();
 }
 
@@ -812,6 +892,13 @@ function reset() {
 }
 
 function render() {
+  // Checked before a week starts, not only after a night. Ruin discovered at
+  // the notices is a verdict; ruin discovered three screens into a bill you
+  // cannot pay for is a dead end the player walked into on our invitation.
+  if (state.step === 'work' && isRuined(state.capital + deepestPocket(), RUIN_FLOOR)) {
+    state.step = 'ruined';
+  }
+
   const bill = currentBill();
   const casting = currentCasting();
   const production = currentProduction(casting);
@@ -856,6 +943,14 @@ window.__debug = {
   get result() { return state.result; },
   get standing() { return state.reputation; },
   get capital() { return state.capital; },
+  get floor() { return RUIN_FLOOR; },
+  get backersLeft() { return backersLeft().map((b) => b.id); },
+  // Test seam only: drops the purse to a chosen figure so the end of a season
+  // can be reached without playing six losing weeks to get there.
+  setCapital(guineas) { state.capital = guineas; render(); },
+  // Test seam only: uses up the town's goodwill, so the end of a season can be
+  // reached without losing three separate productions to get there.
+  spendBackers() { state.spentBackers = BACKERS.map((b) => b.id); render(); },
   open() { open_(); },
   get night() { return state.night; },
   get performance() { return state.performance; },
