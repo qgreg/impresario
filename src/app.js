@@ -666,17 +666,6 @@ function paintOpen(bill, casting, production) {
 
   el.prompt.textContent = 'The notices';
 
-  // What the house does. It follows the *audience* rather than the accounts,
-  // because the audience is who is actually in the room making a noise — and a
-  // vulgar hit that pays while shaming you should still sound like a hit.
-  const reception = receptionFor({
-    profit: result.profit,
-    mishaps: result.mishaps,
-    lit: state.performance?.lit ?? 1,
-  });
-  if (reception === 'applause') sfx.applause(warmthFor(result.received));
-  else if (sfx[reception]) sfx[reception]();
-
   // Careful play can drive volatility below zero, and "0 of the -2 things that
   // could go wrong did" is nonsense. Below one, there was simply nothing to fear.
   const atRisk = Math.max(0, result.couldHaveGoneWrong);
@@ -961,8 +950,33 @@ function open_() {
     state.capital = funds() - outlay + state.result.takings;
     state.reputation += state.result.standing;
     state.step = 'open';
+    applaud(state.result, result);
     render();
   });
+}
+
+/**
+ * What the house does when the curtain comes down. Once.
+ *
+ * Sounded from the moment the night resolves rather than from the painting of
+ * the notices, which is the rule this file already followed for the trombone and
+ * then quietly broke for the fanfare: `render` runs as often as it likes, and a
+ * bare repaint of the notices was playing the fanfare again from the top.
+ * Nothing in ordinary play repainted that screen, so it never made a sound out
+ * loud — it was simply waiting for the next control that called `render`.
+ *
+ * The reception follows the *audience* rather than the accounts, because the
+ * audience is who is actually in the room making a noise. A vulgar hit that pays
+ * while shaming you should still sound like a hit.
+ */
+function applaud(settled, performance) {
+  const reception = receptionFor({
+    profit: settled.profit,
+    mishaps: settled.mishaps,
+    lit: performance?.lit ?? 1,
+  });
+  if (reception === 'applause') sfx.applause(warmthFor(settled.received));
+  else if (sfx[reception]) sfx[reception]();
 }
 
 /** Put the stage up, run the evening, and take it down again. */
@@ -1099,6 +1113,9 @@ window.__debug = {
   get capital() { return state.capital; },
   get floor() { return RUIN_FLOOR; },
   get fate() { return state.fate; },
+  // Test seam: forces a repaint without changing anything, which is how a
+  // one-shot sound played from the painting gets caught.
+  repaint() { render(); },
   get impresario() { return state.impresario?.id ?? null; },
   become(id) { const p = IMPRESARIOS.find((i) => i.id === id); if (p) chooseImpresario(p); return p?.id ?? null; },
   get backersLeft() { return backersLeft().map((b) => b.id); },

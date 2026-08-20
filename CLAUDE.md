@@ -205,9 +205,17 @@ stage manager from `speechSynthesis`, which every browser already carries.
 is called from the curtain button — the first press the page ever receives.
 Building an `AudioContext` before that leaves it suspended.
 
-**Play a one-shot from the transition, not from the paint.** `render` runs many
-times; the trombone sounds from `ruin()` and the fate is drawn there too, for
-the same reason. A repaint must never re-sound anything.
+**Play a one-shot from the transition, not from the paint.** `render` runs as
+often as it likes. The trombone sounds from `ruin()`, the reception from
+`applaud()` at the moment the night resolves, and the fate is drawn in `ruin()`
+for the same reason — a repaint must never re-sound or re-decide anything.
+
+This rule was written for the trombone and then quietly broken for the fanfare,
+which lived in `paintOpen`: a bare repaint of the notices played it again from
+the top, three repaints played it three times. Nothing in ordinary play repaints
+that screen, so it never made a sound out loud — it was waiting for the next
+control that called `render`. `window.__debug.repaint()` exists to catch exactly
+this: force a repaint of any resolved screen and nothing should happen.
 
 **Never guess anybody's gender.** The roster is half women and parts are cast
 freely across it, so player-facing copy uses they/them for performers. Two
