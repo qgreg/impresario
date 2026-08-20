@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0B0908">
+<title>Impresario — the follow spot</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  /* The toy is a bare stage: no chrome, no panels, nothing but the boards. */
+  html, body { background: #0B0908; overflow: hidden; touch-action: none; }
+  #stage { display: block; width: 100vw; height: 100vh; }
+
+  .veil {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 2rem 1.4rem;
+    text-align: center;
+    background: rgba(11, 9, 8, 0.86);
+    color: var(--cream);
+    /* The veil is a caption, never a target. Without this it sits over the
+       canvas and swallows the very touch that is meant to start the show. */
+    pointer-events: none;
+  }
+  .veil[hidden] { display: none; }
+  .veil h1 { margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--gold); }
+  .veil p { margin: 0; max-width: 26ch; color: var(--ash); font-size: 0.95rem; line-height: 1.5; }
+  .veil .grade { font-size: 2rem; color: var(--cream); margin: 0.2rem 0; }
+  .veil .note { color: var(--cream); font-style: italic; }
+  .veil .figures { display: flex; gap: 1.6rem; margin: 0.4rem 0 0.2rem; }
+  .veil .figure { text-align: center; }
+  .veil .figure b { display: block; font-size: 1.3rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .veil .figure span { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash); }
+  .veil small { color: var(--ash); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<canvas id="stage"></canvas>
+
+<div class="veil" id="veil">
+  <h1>The follow spot</h1>
+  <p>She is about to come on. Keep her lit — and try to make it look easy.</p>
+  <small id="prompt-hint">Touch and drag anywhere to take the lamp</small>
+</div>
+
+<script type="module" src="./src/spotlight.js"></script>
+</body>
+</html>

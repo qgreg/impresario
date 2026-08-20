@@ -52,7 +52,7 @@ games go to die.
 | **The Bill** | What are we doing, and dare we? | Commitment, made blind | **playable** |
 | **The Company** | Who can actually carry this? | Combination, fit, ego | not built |
 | **The Production** | How do I cover what I've got? | Compensation, made informed | not built |
-| **Opening Night** | It is going wrong — what now? | Improvisation, live | not built |
+| **Opening Night** | It is going wrong — what now? | Improvisation, live | **toy playable** |
 | *The Notices* | Was that hubris or genius? | *Epilogue, not a phase* | not built |
 
 Being short of money never blocks you. It opens the drawer of people who will
@@ -79,21 +79,36 @@ newcomer who is, tonight, unexpectedly extraordinary.
 
 ```sh
 npm start     # python3 -m http.server 8080 — any static server works
-npm test      # node test/bill.test.js
+npm test      # both suites
 ```
 
 Then open `http://localhost:8080` and narrow the window to a phone's width.
 
+`/spotlight.html` is the follow-spot toy: a bare stage, one performer, and
+twenty-eight seconds of her business. It stands alone and depends on no other
+phase, because it is the riskiest idea here and the only one that cannot be
+settled by argument.
+
 ## Tests
 
-`test/bill.test.js` runs under bare Node with no dependencies. It checks the
-arithmetic of a bill, the billing line, the backer drawer, and that all 336
-legal combinations of work × treatment × hook derive without crashing.
+Both suites run under bare Node with no dependencies.
 
-Every phase but the spotlight is a pure function over plain data, and is tested
-that way. The spotlight cannot be — but its *scoring* will be a pure function
-from a recorded path of samples to a grade, so the part that has to be right is
-testable even though the thumb is not.
+`test/bill.test.js` checks the arithmetic of a bill, the billing line, the
+backer drawer, and that all 336 legal combinations of work × treatment × hook
+derive without crashing.
+
+`test/follow.test.js` checks the lamp settles where it is sent and overshoots
+when snatched, that the performer never leaves the stage or teleports, and that
+the grade behaves: a jittery lamp on target as often as a calm one still grades
+lower, a beautiful beam pointed at nobody grades badly, and simulated operators
+of different quality receive different verdicts.
+
+That last one earns its place. The jerk budget was first set by guess at 26; the
+measured range for plausible operators turned out to be 0.22 to 1.65, so every
+operator scored 0.99 and grace was decoration. The property test is what catches
+that.
+
+Only the thumb is untestable.
 
 ## Design notes
 

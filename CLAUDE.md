@@ -32,8 +32,14 @@ index.html        the whole game's markup — one screen, repainted
 styles.css        gaslight-and-velvet palette, portrait layout
 src/data.js       the content tables: works, treatments, hooks, backers, remarks
 src/bill.js       pure derivation — cost, appeal, volatility, roles, billing
-src/app.js        state, painting, and the step machine. The only stateful module
-test/bill.test.js unit tests, bare Node, no framework
+src/app.js        state, painting, and the step machine for The Bill
+
+spotlight.html    the follow-spot toy, standalone, depends on no other phase
+src/follow.js     pure — lamp physics, the performer's business, the grade
+src/spotlight.js  canvas, clock and pointer for the toy. Owns nothing else
+
+test/bill.test.js   unit tests, bare Node, no framework
+test/follow.test.js the same, for the spotlight
 ```
 
 `src/app.js` owns all state. Everything else is a pure function it calls.
@@ -64,8 +70,15 @@ browser to be checked. When you add logic that decides an outcome, factor it
 into `src/*.js` as a pure function and test it.
 
 **The spotlight phase cannot be tested headlessly — so isolate what can.** Its
-*scoring* must be a pure function from a recorded path of samples to a grade,
-even though the input is a thumb.
+scoring *is* a pure function from a recorded path of samples to a grade, and so
+are the lamp's motion and the performer's business. Only the thumb is untestable.
+
+**Tune from measurement, not from theory.** `JERK_BUDGET` was first set to a
+round guess of 26; simulating operators from a metronome to a panicking beginner
+showed the real range was 0.22 to 1.65, so everybody scored 0.99 and grace was
+decoration. The test file now asserts the *property* that catches that class of
+mistake: operators of visibly different quality must not all receive the same
+verdict. Keep that check green when the scene or the lamp changes.
 
 **Comments explain *why*, at length.** Which alternative was tried and rejected,
 what breaks without a guard, why a number is that number. Match that density;
