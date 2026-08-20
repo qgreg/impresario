@@ -1,0 +1,280 @@
+/*
+ * Gaslight and velvet. The ground is near-black because a theatre is dark and
+ * because a dark page is legible outdoors on a phone at full brightness; the
+ * warm ink on top of it stays readable in sunlight, which is where most of this
+ * will actually be played.
+ *
+ * Portrait only, one thumb. Every tappable thing lives in the bottom half of
+ * the screen: the top is for looking at, the bottom is for reaching.
+ */
+
+:root {
+  --night: #14100E;
+  --night-raised: #1E1815;
+  --curtain: #7A2231;
+  --curtain-deep: #4A141D;
+  --brass: #C9973F;
+  --gold: #E6BC63;
+  --cream: #F2E4CB;
+  --ash: #9A8B76;
+
+  /* The three audiences. Each also carries a glyph, so the board never depends
+     on colour alone to say who is being spoken about. */
+  --crowd: #E8A33D;
+  --society: #C193D4;
+  --critics: #6FB3A8;
+
+  --alarm: #D97A5A;
+
+  --tap: 48px;   /* nothing interactive is ever smaller than this */
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--night);
+  color: var(--cream);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  overscroll-behavior: none;
+}
+
+body {
+  /* The house curtain, hinted rather than drawn. */
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, rgba(122, 34, 49, 0.55), transparent 70%),
+    radial-gradient(80% 40% at 50% 105%, rgba(122, 34, 49, 0.25), transparent 70%);
+  background-attachment: fixed;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: max(0.6rem, env(safe-area-inset-top)) 0.9rem max(0.9rem, env(safe-area-inset-bottom));
+  gap: 0.7rem;
+}
+
+/* ------------------------------------------------------------ standing */
+
+.standing {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(201, 151, 63, 0.28);
+  padding-bottom: 0.55rem;
+}
+
+.standing__item { flex: 1; min-width: 0; }
+.standing__item--wide { flex: 1.4; text-align: center; }
+.standing__item:last-child { text-align: right; }
+
+.standing__label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+.standing__value {
+  display: block;
+  font-size: 1.05rem;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- poster */
+
+.poster {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.8rem;
+  border: 1px solid rgba(201, 151, 63, 0.32);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(74, 20, 29, 0.35), rgba(20, 16, 14, 0.2));
+  min-height: 6.5rem;
+}
+
+.poster__house {
+  margin: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.poster__title {
+  margin: 0;
+  font-size: clamp(1.15rem, 5.2vw, 1.6rem);
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--cream);
+  text-wrap: balance;
+}
+
+.poster__title--empty { color: var(--ash); font-style: italic; font-weight: 400; }
+
+.poster__remark {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--gold);
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------------- readout */
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--night-raised);
+  border-radius: 4px;
+}
+
+.readout__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.readout__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+.readout__value {
+  font-size: 0.95rem;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+
+.readout__value--short { color: var(--alarm); }
+.readout__row--volatility .readout__value { color: var(--gold); }
+
+.meters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+
+.meter {
+  display: grid;
+  grid-template-columns: 1.1rem 5.2rem 1fr auto;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+}
+
+.meter__glyph { text-align: center; font-size: 0.72rem; }
+.meter__bar {
+  position: relative;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(154, 139, 118, 0.22);
+  overflow: hidden;
+}
+.meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  transition: width 180ms ease-out;
+}
+.meter__who { font-size: 0.76rem; color: var(--cream); white-space: nowrap; }
+.meter__grade { color: var(--ash); font-size: 0.72rem; min-width: 5.4rem; text-align: right; }
+
+.meter--crowd .meter__glyph, .meter--crowd .meter__fill { color: var(--crowd); background-color: var(--crowd); }
+.meter--society .meter__glyph, .meter--society .meter__fill { color: var(--society); background-color: var(--society); }
+.meter--critics .meter__glyph, .meter--critics .meter__fill { color: var(--critics); background-color: var(--critics); }
+.meter--crowd .meter__who { color: var(--crowd); }
+.meter--society .meter__who { color: var(--society); }
+.meter--critics .meter__who { color: var(--critics); }
+.meter__glyph { background: none !important; }
+.meter--hostile .meter__bar { background: rgba(217, 122, 90, 0.3); }
+
+/* -------------------------------------------------------------- choice */
+
+.choice {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.choice__prompt {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.cards {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.2rem;
+}
+
+.card {
+  display: block;
+  width: 100%;
+  /* The card list is a flex column, and a flex item shrinks by default — which
+     squeezed the tag row out through the bottom border once the list overflowed.
+     Cards are their own height and the list scrolls instead. */
+  flex: 0 0 auto;
+  min-height: var(--tap);
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(201, 151, 63, 0.3);
+  border-radius: 4px;
+  background: var(--night-raised);
+  color: var(--cream);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 90ms ease-out, border-color 120ms, background-color 120ms;
+}
+
+.card:active { transform: scale(0.985); background: rgba(122, 34, 49, 0.4); border-color: var(--gold); }
+
+.card__top { display: flex; justify-content: space-between; gap: 0.6rem; align-items: baseline; }
+.card__name { font-size: 0.98rem; font-weight: 600; }
+.card__cost { font-size: 0.85rem; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card__note { margin: 0.15rem 0 0; font-size: 0.76rem; color: var(--ash); font-style: italic; }
+
+.card__tags { display: flex; flex-wrap: wrap; gap: 0.3rem 0.55rem; margin-top: 0.35rem; font-size: 0.72rem; }
+.tag { color: var(--ash); font-variant-numeric: tabular-nums; }
+.tag--crowd { color: var(--crowd); }
+.tag--society { color: var(--society); }
+.tag--critics { color: var(--critics); }
+.tag--risk { color: var(--alarm); }
+
+/* The mount button is the commitment, so it looks unlike every other card. */
+.card--mount {
+  background: linear-gradient(180deg, var(--curtain), var(--curtain-deep));
+  border-color: var(--gold);
+  text-align: center;
+}
+.card--mount .card__name { font-size: 1.05rem; letter-spacing: 0.04em; }
+
+.card--backer { border-style: dashed; }
+
+.card--quiet { background: transparent; border-color: rgba(154, 139, 118, 0.3); }
+.card--quiet .card__name { color: var(--ash); font-weight: 400; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

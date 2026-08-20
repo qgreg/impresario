@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="Mount a season of theatre you cannot afford. A mobile game about nerve, casting and the things that go wrong on opening night.">
+<meta name="theme-color" content="#14100E">
+<title>Impresario</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<main id="app">
+
+  <header class="standing">
+    <div class="standing__item">
+      <span class="standing__label">Capital</span>
+      <span class="standing__value" id="capital">—</span>
+    </div>
+    <div class="standing__item standing__item--wide">
+      <span class="standing__label">Season</span>
+      <span class="standing__value" id="week">—</span>
+    </div>
+    <div class="standing__item">
+      <span class="standing__label">Standing</span>
+      <span class="standing__value" id="reputation">—</span>
+    </div>
+  </header>
+
+  <!-- The poster assembles itself as the three choices land. It is the only
+       thing on screen that is purely for pleasure, so it gets the space. -->
+  <section class="poster" id="poster">
+    <p class="poster__house">The Alhambra</p>
+    <h1 class="poster__title" id="poster-title">Nothing is billed</h1>
+    <p class="poster__remark" id="poster-remark" hidden></p>
+  </section>
+
+  <section class="readout" id="readout">
+    <div class="readout__row">
+      <span class="readout__label">Cost</span>
+      <span class="readout__value" id="cost">—</span>
+    </div>
+    <ul class="meters" id="meters"></ul>
+    <div class="readout__row readout__row--volatility">
+      <span class="readout__label">Opening night</span>
+      <span class="readout__value" id="volatility">—</span>
+    </div>
+  </section>
+
+  <section class="choice" id="choice">
+    <h2 class="choice__prompt" id="prompt">Choose the work</h2>
+    <div class="cards" id="cards"></div>
+  </section>
+
+</main>
+
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>

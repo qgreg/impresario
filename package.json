@@ -1,0 +1,13 @@
+{
+  "name": "impresario",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Gregory L. Quinlan",
+  "description": "A mobile web game about mounting a season of theatre you cannot afford.",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node test/bill.test.js"
+  }
+}
