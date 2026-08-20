@@ -20,6 +20,9 @@ import { settleShow, gradeStanding, isRuined, cheapestProduction, fateFor } from
 import { buildNight, gradeNight, crisisCount } from './night.js';
 import { runNight } from './openingnight.js';
 import {
+  sfx, call, stopTalking, wake, isEnabled, setEnabled, receptionFor, warmthFor,
+} from './sound.js';
+import {
   deriveBill, financing, gradeAppeal, gradeVolatility, rolesOf, costOf,
   AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
 } from './bill.js';
@@ -111,6 +114,10 @@ const el = {
   readout: document.getElementById('readout'),
   curtain: document.getElementById('curtain'),
   begin: document.getElementById('begin'),
+  sound: document.getElementById('sound'),
+  soundLabel: document.getElementById('sound-label'),
+  mute: document.getElementById('mute'),
+  muteLabel: document.getElementById('mute-label'),
   night: document.getElementById('night'),
   nightStage: document.getElementById('night-stage'),
   nightCue: document.getElementById('night-cue'),
@@ -659,6 +666,17 @@ function paintOpen(bill, casting, production) {
 
   el.prompt.textContent = 'The notices';
 
+  // What the house does. It follows the *audience* rather than the accounts,
+  // because the audience is who is actually in the room making a noise — and a
+  // vulgar hit that pays while shaming you should still sound like a hit.
+  const reception = receptionFor({
+    profit: result.profit,
+    mishaps: result.mishaps,
+    lit: state.performance?.lit ?? 1,
+  });
+  if (reception === 'applause') sfx.applause(warmthFor(result.received));
+  else if (sfx[reception]) sfx[reception]();
+
   // Careful play can drive volatility below zero, and "0 of the -2 things that
   // could go wrong did" is nonsense. Below one, there was simply nothing to fear.
   const atRisk = Math.max(0, result.couldHaveGoneWrong);
@@ -763,7 +781,7 @@ function paintImpresarios() {
       cost: person.epithet,
       note: person.blurb,
       tags,
-      onSelect: () => chooseImpresario(person),
+      onSelect: () => { sfx.tap(); chooseImpresario(person); },
     }));
   }
 }
@@ -795,6 +813,10 @@ function ruin() {
       backersSpent: state.spentBackers,
     });
     state.step = 'ruined';
+    // Played from here rather than from the painting, for the same reason the
+    // fate is drawn here: a repaint must not sound the trombone again.
+    stopTalking();
+    sfx.trombone();
   }
 }
 
@@ -959,8 +981,19 @@ function playNight(night, done) {
       el.nightCue.className = text
         ? `night__cue night__cue--on night__cue--${requirement}`
         : 'night__cue';
+
+      // The cue light rings, and then the stage manager says what is wrong. The
+      // line is already on the screen — this is the same information arriving
+      // by a second route, for a player whose eyes are on the performer.
+      if (text) {
+        sfx.cue();
+        call(text);
+      } else {
+        stopTalking();
+      }
     },
     onFinish(result) {
+      stopTalking();
       el.night.hidden = true;
       state.running = null;
       done(result);
@@ -1013,7 +1046,31 @@ function render() {
  * of it was for. The velvet parts on one button, and the board is already
  * behind it — nothing loads, nothing waits.
  */
+/** Both controls say the same thing and set the same preference. */
+function paintSound() {
+  const on = isEnabled();
+  el.sound.setAttribute('aria-pressed', String(on));
+  el.soundLabel.textContent = `Sound and the stage manager: ${on ? 'on' : 'off'}`;
+  el.mute.setAttribute('aria-pressed', String(on));
+  el.muteLabel.textContent = on ? 'on' : 'off';
+}
+
+function toggleSound() {
+  setEnabled(!isEnabled());
+  paintSound();
+  // A confirmation you can hear is the only honest way to test a sound control.
+  if (isEnabled()) sfx.cue();
+}
+
+el.sound.addEventListener('click', toggleSound);
+el.mute.addEventListener('click', toggleSound);
+paintSound();
+
 function raiseTheCurtain() {
+  // The button press is the gesture browsers demand before any audio at all,
+  // so the context is built here and nowhere else.
+  wake();
+  sfx.curtain();
   el.curtain.classList.add('curtain--open');
   el.begin.disabled = true;
   // Taken out of the layout once it has finished parting, so nothing invisible

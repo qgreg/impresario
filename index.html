@@ -34,6 +34,13 @@
     </p>
 
     <button id="begin" class="curtain__button" type="button">Take the Alhambra</button>
+
+    <!-- Set before anything can make a noise, because the first sound this
+         page makes is the curtain going up on that button. -->
+    <button id="sound" class="curtain__sound" type="button" aria-pressed="true">
+      <span id="sound-label">Sound and the stage manager: on</span>
+    </button>
+
     <a class="curtain__aside" href="./spotlight.html">Or just work the lamp a while &rarr;</a>
   </div>
 </div>
@@ -53,6 +60,12 @@
       <span class="standing__label">Standing</span>
       <span class="standing__value" id="reputation">—</span>
     </div>
+    <!-- Small, but it keeps a full tap target: a mute button people cannot hit
+         is worse than no mute button. -->
+    <button class="standing__mute" id="mute" type="button" aria-pressed="true" title="Sound">
+      <span id="mute-glyph" aria-hidden="true">&#9835;</span>
+      <span class="standing__label" id="mute-label">on</span>
+    </button>
   </header>
 
   <!-- The poster assembles itself as the three choices land. It is the only

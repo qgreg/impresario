@@ -38,6 +38,7 @@ src/notices.js    pure — takings, standing, and the reviews
 src/night.js      pure — the scene, the crises, and judging each one
 src/openingnight.js  the live stage. A canvas, a clock, a thumb, nothing else
 src/stagepaint.js    boards, figures and beam, shared by the toy and the night
+src/sound.js      the pit and the stage manager. Synthesised; no audio files
 src/app.js        state, painting, and the step machine for The Bill and casting
 
 spotlight.html    the follow-spot toy, standalone, depends on no other phase
@@ -49,6 +50,7 @@ test/company.test.js the same, for casting
 test/production.test.js  the same, for staging and rehearsal
 test/notices.test.js     the same, for the settlement
 test/night.test.js       the same, for the crises and their judgement
+test/sound.test.js       the same, for which reception a night earns
 test/follow.test.js  the same, for the spotlight
 ```
 
@@ -190,6 +192,22 @@ on every repaint and the player watches their own obituary change its mind.
 **Anything the app hides needs its own `[hidden]` guard in CSS.** An element with
 `display: flex` of its own beats the user-agent `[hidden]` rule, so setting the
 attribute silently does nothing. `.poster` and `.readout` carry the guard.
+
+**Nothing is signalled by sound alone.** Most phone play is silent and in
+public. Every cue is on the screen first; the audio only agrees with it. Muting
+must lose atmosphere and no information. Keep it that way when adding feedback.
+
+**Sound is synthesised, never fetched.** No audio files, for the same reason
+there are no images. `sound.js` builds a fanfare from four oscillators and the
+stage manager from `speechSynthesis`, which every browser already carries.
+
+**Audio needs a gesture, and there is exactly one place to take it.** `wake()`
+is called from the curtain button — the first press the page ever receives.
+Building an `AudioContext` before that leaves it suspended.
+
+**Play a one-shot from the transition, not from the paint.** `render` runs many
+times; the trombone sounds from `ruin()` and the fate is drawn there too, for
+the same reason. A repaint must never re-sound anything.
 
 **Never guess anybody's gender.** The roster is half women and parts are cast
 freely across it, so player-facing copy uses they/them for performers. Two

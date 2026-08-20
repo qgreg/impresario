@@ -543,6 +543,47 @@ body {
   50% { box-shadow: 0 0 26px rgba(232, 163, 61, 0.42); }
 }
 
+/* The sound preference, offered before the first noise is made. */
+.curtain__sound {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(154, 139, 118, 0.4);
+  border-radius: 3px;
+  background: rgba(20, 16, 14, 0.6);
+  color: var(--cream);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.curtain__sound[aria-pressed="false"] { color: var(--ash); border-color: rgba(154, 139, 118, 0.22); }
+
+/* In-game the control shrinks to a corner of the standing row. It keeps a full
+   tap target even though it looks small — a mute button people cannot hit is
+   worse than no mute button. */
+.standing__mute {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-left: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brass);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.standing__mute[aria-pressed="false"] { color: var(--ash); opacity: 0.72; }
+.standing__mute[aria-pressed="false"] #mute-glyph { text-decoration: line-through; }
+
 .curtain__aside {
   display: inline-block;
   padding: 0.5rem;

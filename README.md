@@ -174,6 +174,29 @@ dice are gone; nothing else about the settlement changed.
 `/spotlight.html` is still there: the same instrument with one performer and no
 consequences, for getting the feel of it.
 
+### The house sound
+
+Every sound is generated. There are no audio files here for the same reason
+there are no images — an effect is one more thing to fetch on a phone signal,
+and a fanfare is four oscillators and an envelope.
+
+The stage manager is `speechSynthesis`, which every browser already carries. A
+voice calling *"The Wexford Boy has frozen. Stay with them"* over a cue light is
+what makes the follow spot feel like a job rather than a minigame, and it costs
+nothing to ship.
+
+The house answers the notices: a fanfare for a faultless night in profit, warm
+applause for a profitable one with a wobble in it, scattered clapping for a loss
+that was at least well run, and the sad trombone for a loss that was not. It
+follows the *audience* rather than the accounts, because the audience is who is
+actually in the room making a noise.
+
+**Nothing is ever signalled by sound alone.** Most phone play is silent, in
+public, so every cue is on the screen first and the audio only agrees with it.
+Muting loses atmosphere and no information whatever — the control is on the
+curtain, before the first noise is made, and in the corner of the standing row
+thereafter.
+
 ### The notices
 
 The epilogue, and the piece that makes the rest a game rather than a
