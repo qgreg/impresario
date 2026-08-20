@@ -34,6 +34,7 @@ src/data.js       the content tables: works, treatments, hooks, backers, remarks
 src/bill.js       pure derivation — cost, appeal, volatility, roles, billing
 src/company.js    pure — fit, feuds, salaries, and the backer's imposed string
 src/production.js pure — staging and rehearsal folded over the cast's seeds
+src/notices.js    pure — mishaps, takings, standing, and the reviews
 src/app.js        state, painting, and the step machine for The Bill and casting
 
 spotlight.html    the follow-spot toy, standalone, depends on no other phase
@@ -43,6 +44,7 @@ src/spotlight.js  canvas, clock and pointer for the toy. Owns nothing else
 test/bill.test.js    unit tests, bare Node, no framework
 test/company.test.js the same, for casting
 test/production.test.js  the same, for staging and rehearsal
+test/notices.test.js     the same, for the settlement
 test/follow.test.js  the same, for the spotlight
 ```
 
@@ -135,6 +137,29 @@ choice.
 **Reopening a phase reopens everything downstream.** Taking a part back clears
 the production, because a staging was chosen to cover that particular cast and
 it is no longer that cast.
+
+**The loop must be re-enterable, and it must be able to end.** Three phases that
+only spend money left the game unplayable after one production — no income meant
+no week two, which reads to a player as being stuck rather than as losing.
+`notices.test.js` asserts both halves: a sensible production can turn a profit on
+an ordinary night, and ruin is *recognised* rather than left as a screen of
+bills nobody can afford.
+
+**Distinguish what was hoped for from what was received.** Appeal is the house's
+expectation; `receivedAppeal` is that figure less the night's wreckage, and the
+three audiences forgive at different rates. Reviews, standing and the meters
+after the curtain all read the received figure. Looking anything up from raw
+appeal produced a show that lost ninety guineas amid nine disasters and was
+still called the finest thing of the season.
+
+**Standing is comparative, never absolute.** It moves on beating
+`CRITIC_EXPECTATION`, not on approval. Scaled straight off the critics it made a
+competent impresario the toast of London by week two and emptied the word.
+
+**Clamp anything that carefulness can drive negative.** Volatility can legitimately
+end up below zero; unclamped, a negative mishap count turned the damage fraction
+into a multiplier and paid out above the gross — money minted from caution. The
+same figure also reached the copy as "0 of the -2 things that could go wrong did".
 
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.

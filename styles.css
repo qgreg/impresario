@@ -342,3 +342,13 @@ body {
 .seed--covered { color: var(--safe); }
 .seed--covered::before { content: '\2713\00a0'; }
 .seed--exposed { color: var(--alarm); }
+
+/* The notices. One line per audience, in that audience's colour — and the
+   glyph is carried by the meters, so colour is never the only signal. */
+.notices { list-style: none; margin: 0.2rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.notice { font-size: 0.84rem; font-style: italic; line-height: 1.4; padding-left: 0.9rem; text-indent: -0.9rem; }
+.notice::before { content: '\201C'; }
+.notice::after { content: '\201D'; }
+.notice--crowd { color: var(--crowd); }
+.notice--society { color: var(--society); }
+.notice--critics { color: var(--critics); }

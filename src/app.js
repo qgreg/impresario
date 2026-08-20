@@ -16,6 +16,7 @@ import {
 import {
   applyProduction, previewFor, gradeProduction,
 } from './production.js';
+import { settleShow, gradeStanding, isRuined } from './notices.js';
 import {
   deriveBill, financing, gradeAppeal, gradeVolatility,
   AUDIENCES, AUDIENCE_LABELS, APPEAL_CEILING,
@@ -31,6 +32,7 @@ const state = {
   backer: null,
   assigned: {},   // roleIndex -> performerId
   production: { staging: null, preparation: null },
+  result: null,   // the settled night, once the house has opened
   // work → treatment → hook → mount → casting → staging → preparation → ready → open
   step: 'work',
 };
@@ -95,7 +97,9 @@ function paintMeters(appeal) {
 function paintStanding() {
   el.capital.textContent = `${state.capital}g`;
   el.week.textContent = `Week ${state.week}`;
-  el.reputation.textContent = state.reputation === 0 ? 'unknown' : `${state.reputation > 0 ? '+' : ''}${state.reputation}`;
+  // Standing is shown in words and never as a bare number. It used to print the
+  // raw figure, which told the player nothing about whether +3 was good.
+  el.reputation.textContent = gradeStanding(state.reputation);
 }
 
 function paintBill(bill, casting, production) {
@@ -112,20 +116,43 @@ function paintBill(bill, casting, production) {
   const casting_ = casting || { salary: 0, appeal: { crowd: 0, society: 0, critics: 0 }, volatility: 0 };
   const production_ = production || { cost: 0, appeal: { crowd: 0, society: 0, critics: 0 }, volatility: 0 };
   const outlay = bill.cost + casting_.salary + production_.cost;
-  const shortfall = Math.max(0, outlay - funds());
 
-  el.cost.textContent = outlay === 0 ? '—' : `${outlay}g`;
+  // Once the house is open the money has gone, so the line reports what was
+  // spent. Comparing the same outlay against the reduced capital reported the
+  // player as short of a sum they had already paid.
+  const settled = state.step === 'open';
+  const shortfall = settled ? 0 : Math.max(0, outlay - funds());
+
   el.cost.classList.toggle('readout__value--short', shortfall > 0);
-  if (shortfall > 0) el.cost.textContent = `${outlay}g — ${shortfall} short`;
+  el.cost.textContent = outlay === 0 ? '—'
+    : settled ? `${outlay}g spent`
+    : shortfall > 0 ? `${outlay}g — ${shortfall} short`
+    : `${outlay}g`;
 
   const appeal = {};
   for (const audience of AUDIENCES) {
     appeal[audience] = bill.appeal[audience] + casting_.appeal[audience] + production_.appeal[audience];
   }
-  paintMeters(appeal);
+
+  // Once the night has happened the meters show what the house actually thought,
+  // not what it was hoping for. Leaving them on the hoped-for figures had the
+  // critics reading "clamouring" directly above a review counting the disasters.
+  paintMeters(settled && state.result ? state.result.received : appeal);
 
   const volatility = bill.volatility + casting_.volatility + production_.volatility;
   const things = volatility === 1 ? 'one thing will go wrong' : `${volatility} things will go wrong`;
+
+  if (settled && state.result) {
+    const { mishaps, couldHaveGoneWrong } = state.result;
+    const atRisk = Math.max(0, couldHaveGoneWrong);
+    el.volatility.textContent = mishaps === 0
+      ? atRisk === 0 ? 'nothing could go wrong, and nothing did' : `none of the ${atRisk} went wrong`
+      : `${mishaps} of ${atRisk} went wrong`;
+    el.volatility.classList.toggle('readout__value--short', mishaps > 0);
+    return;
+  }
+
+  el.volatility.classList.remove('readout__value--short');
   el.volatility.textContent = volatility === 0 && !bill.work
     ? '—'
     : `${gradeVolatility(volatility)} · ${volatility === 0 ? 'nothing will go wrong' : things}`;
@@ -533,15 +560,52 @@ function paintReady(bill, casting, production) {
 }
 
 /** The last two phases do not exist yet, so the run stops here honestly. */
+/** The night, settled. No decision in it — this is the epilogue. */
 function paintOpen(bill, casting, production) {
-  const trouble = bill.volatility + casting.volatility + production.volatility;
-  el.prompt.textContent = 'The house is open';
-  el.cards.appendChild(card('The curtain is about to go up', {
-    note: `${trouble} things will go wrong tonight. Opening night is not built yet — try the follow spot at /spotlight.html to see where this is going.`,
-    className: 'card--quiet',
-    onSelect: () => {},
-  }));
+  const result = state.result;
+  if (!result) return;
+
+  el.prompt.textContent = 'The notices';
+
+  // Careful play can drive volatility below zero, and "0 of the -2 things that
+  // could go wrong did" is nonsense. Below one, there was simply nothing to fear.
+  const atRisk = Math.max(0, result.couldHaveGoneWrong);
+  const wentWrong = atRisk === 0
+    ? 'There was never anything to go wrong.'
+    : result.mishaps === 0
+      ? `Nothing went wrong, of the ${atRisk} that might have.`
+      : result.mishaps === 1
+        ? `One of the ${atRisk} things that could go wrong did.`
+        : `${result.mishaps} of the ${atRisk} things that could go wrong did.`;
+
+  el.cards.appendChild(card(
+    result.profit >= 0 ? `You are ${result.profit}g up` : `You are ${-result.profit}g down`,
+    {
+      cost: `${result.takings}g taken`,
+      note: `${wentWrong} ${result.outlay}g went out, ${result.takings}g came back.`,
+      className: result.profit >= 0 ? 'card--mount' : 'card--quiet',
+      tags: [{
+        kind: result.standing >= 0 ? 'quiet' : 'risk',
+        text: result.standing === 0 ? 'your standing is unchanged'
+          : result.standing > 0 ? `your standing rises to ${gradeStanding(state.reputation)}`
+          : `your standing falls to ${gradeStanding(state.reputation)}`,
+      }],
+      onSelect: () => {},
+    },
+  ));
+
+  const list = document.createElement('ul');
+  list.className = 'notices';
+  for (const notice of result.notices) {
+    const item = document.createElement('li');
+    item.className = `notice notice--${notice.audience}`;
+    item.textContent = notice.text;
+    list.appendChild(item);
+  }
+  el.cards.appendChild(list);
+
   appendProductionSeeds(production);
+
   if (state.backer) {
     el.cards.appendChild(card(`${state.backer.name} has your note of hand`, {
       note: state.backer.string,
@@ -549,10 +613,36 @@ function paintOpen(bill, casting, production) {
       onSelect: () => {},
     }));
   }
+
+  // A season has to be able to end. Without this a broke impresario taps
+  // through bills they can never afford for ever, which is not a loss — it is
+  // a hang, and it is what being "stuck" actually looked like.
+  const cheapest = Math.min(...WORKS.map((w) => w.cost));
+  if (isRuined(state.capital, cheapest)) {
+    el.cards.appendChild(card('You are ruined', {
+      note: `${state.capital}g will not mount anything, and nobody in this town will advance you another penny. You lasted ${state.week} week${state.week === 1 ? '' : 's'}.`,
+      className: 'card--quiet',
+      onSelect: () => {},
+    }));
+    el.cards.appendChild(card('Begin again', {
+      className: 'card--mount',
+      onSelect: beginSeason,
+    }));
+    return;
+  }
+
   el.cards.appendChild(card('Mount another', {
     className: 'card--mount',
     onSelect: reset,
   }));
+}
+
+/** A fresh season: back to the starting purse and no reputation at all. */
+function beginSeason() {
+  state.capital = STARTING_CAPITAL;
+  state.reputation = 0;
+  state.week = 0;
+  reset();
 }
 
 // ------------------------------------------------------------------ state
@@ -618,7 +708,23 @@ function open_() {
   const bill = currentBill();
   const casting = currentCasting();
   const production = currentProduction(casting);
-  state.capital = funds() - bill.cost - casting.salary - production.cost;
+
+  const outlay = bill.cost + casting.salary + production.cost;
+  // The button that calls this is only offered when the money is there, but the
+  // debug seam can reach it directly and an impresario who opens on credit would
+  // end the night with a capital nobody can explain.
+  if (outlay > funds()) return;
+  const appeal = {};
+  for (const audience of AUDIENCES) {
+    appeal[audience] = bill.appeal[audience] + casting.appeal[audience] + production.appeal[audience];
+  }
+  const volatility = bill.volatility + casting.volatility + production.volatility;
+
+  // Opening night is not built yet, so the mishaps are rolled. When it is, the
+  // follow spot hands in its own count and this call passes it straight through.
+  state.result = settleShow({ appeal, volatility, outlay });
+  state.capital = funds() - outlay + state.result.takings;
+  state.reputation += state.result.standing;
   state.step = 'open';
   render();
 }
@@ -628,6 +734,7 @@ function reset() {
   state.backer = null;
   state.assigned = {};
   state.production = { staging: null, preparation: null };
+  state.result = null;
   state.step = 'work';
   state.week++;
   render();
@@ -652,6 +759,10 @@ window.__debug = {
   get bill() { return currentBill(); },
   get casting() { return currentCasting(); },
   get production() { return currentProduction(); },
+  get result() { return state.result; },
+  get standing() { return state.reputation; },
+  get capital() { return state.capital; },
+  open() { open_(); },
   stage(id) { chooseStaging(STAGINGS.find((s) => s.id === id)); },
   prepare(id) { choosePreparation(PREPARATIONS.find((p) => p.id === id)); },
   cast(index, performerId) { assign(index, performerId); },

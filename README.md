@@ -116,6 +116,37 @@ deliberate; a stage manager in the wings settles the ones who quarrel and the
 ones who drink. Opening cold is always free, because a player who has spent
 everything must still be allowed to open.
 
+### The notices
+
+The epilogue, and the piece that makes the rest a game rather than a
+demonstration. Without it money only ever leaves the account, an impresario who
+mounts one show is broke for ever, and week two is unreachable — which reads to
+a player not as losing but as being stuck.
+
+Each thing that could go wrong is rolled separately, so a reckless production is
+a genuine gamble rather than a fixed tax: sixteen things that might go wrong
+can, on a kind night, produce three.
+
+**The reviews describe the night that happened, not the night you planned.**
+Appeal is what the house came hoping for; what it saw is that figure less the
+wreckage, and the three audiences forgive at different rates — the gallery came
+for a night out and will take a shambles in good part, the boxes are embarrassed
+to be seen at one, the critics are paid to notice. The meters flip from the
+hoped-for reading to the received one when the curtain comes down, so you watch
+your expectations collapse.
+
+**Standing is comparative.** It moves on whether you beat what a competent
+production is simply expected to receive, not on absolute approval. A
+respectable notice leaves it exactly where it was.
+
+A show can make money and cost you your reputation, and a critical triumph can
+still ruin you. That tension is the reason there are three audiences rather than
+one score.
+
+If you cannot afford the cheapest work on the shelf, the season ends. A broke
+impresario tapping through bills they can never mount is not a loss, it is a
+hang.
+
 Being short of money never blocks you. It opens the drawer of people who will
 lend it, and every one of them wants something that costs more than the money
 did. That is the whole push-your-luck of the first phase, folded into the
