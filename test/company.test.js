@@ -10,7 +10,7 @@ import {
   gradeCompany, TEMPERAMENTS,
 } from '../src/company.js';
 import { deriveBill } from '../src/bill.js';
-import { PERFORMERS, WORKS, TREATMENTS, HOOKS, BACKERS } from '../src/data.js';
+import { PERFORMERS, WORKS, TREATMENTS, HOOKS, BACKERS, LINES, ROLE_LINES, ADJACENT } from '../src/data.js';
 
 const failures = [];
 function check(label, condition, detail = '') {
@@ -20,26 +20,34 @@ function check(label, condition, detail = '') {
 }
 
 const who = (id) => PERFORMERS.find((p) => p.id === id);
-const slot = (role, discipline = null) => ({ role, discipline, label: role });
+const slot = (role) => ({ role, line: ROLE_LINES[role], label: role });
 
 // --- fit ---------------------------------------------------------------------
 
-check('a performer in their own line is ideal',
+check('a performer squarely in their line is ideal',
   fitFor(who('fenwick'), slot('Ingénue')).level === 'ideal');
-check('a performer out of their line is passable, not forbidden',
-  fitFor(who('pike'), slot('Diva')).level === 'passable');
-check('casting against type costs volatility rather than being blocked',
-  fitFor(who('pike'), slot('Diva')).volatility > 0);
+check('an adjacent line stretches to cover the part',
+  fitFor(who('vane'), slot('Tragedian')).level === 'passable',
+  'a heavy will take a lead at a push');
+check('stretching costs volatility rather than being blocked',
+  fitFor(who('vane'), slot('Tragedian')).volatility > 0);
 
-check('a treatment that demands dancers rejects a singer',
-  fitFor(who('vestris'), slot('Diva', 'Dancer')).level === 'wrong');
-check('and accepts a dancer for the same part',
-  fitFor(who('marr'), slot('Diva', 'Dancer')).level === 'ideal');
-check('the wrong discipline is the heaviest penalty available',
-  fitFor(who('vestris'), slot('Diva', 'Dancer')).appeal <
-  fitFor(who('pike'), slot('Diva')).appeal);
-check('discipline overrules affinity, because a singer still cannot dance',
-  fitFor(who('vestris'), slot('Diva', 'Dancer')).level === 'wrong');
+check('nobody in the leading line will play low comedy',
+  fitFor(who('kean'), slot('Comic')).level === 'wrong');
+check('and a nineteen-year-old is not an old character man',
+  fitFor(who('wexford'), slot('Character Man')).level === 'wrong');
+check('being out of your line is the heaviest penalty available',
+  fitFor(who('kean'), slot('Comic')).appeal <
+  fitFor(who('vane'), slot('Tragedian')).appeal);
+
+// Utility is the safety valve: never ideal, never an insult, always available.
+check('a utility player is never out of their line',
+  LINES.filter((l) => l !== 'Utility').every((line) => {
+    const part = Object.keys(ROLE_LINES).find((role) => ROLE_LINES[role] === line);
+    return fitFor(who('rowe'), slot(part)).level === 'passable';
+  }));
+check('and is never ideal either, because adequacy is the whole of the line',
+  Object.keys(ROLE_LINES).every((role) => fitFor(who('rowe'), slot(role)).level !== 'ideal'));
 
 check('an empty slot has no fit at all', fitFor(null, slot('Ingénue')) === null);
 
@@ -52,6 +60,8 @@ const hamlet = deriveBill({
 });
 
 check('the bill hands casting four roles to fill', hamlet.roles.length === 4);
+check('and every one of them carries the line it belongs to',
+  hamlet.roles.every((r) => LINES.includes(r.line)));
 
 {
   const empty = appraiseCasting(hamlet, {});
@@ -82,27 +92,45 @@ check('the bill hands casting four roles to fill', hamlet.roles.length === 4);
 }
 
 {
-  // Fame and talent must be separable currencies, or the phase has one axis.
-  const famous = appraiseCasting(hamlet, { 0: 'vestris' });   // fame 5, talent 5
-  const unknown = appraiseCasting(hamlet, { 0: 'bone' });     // fame 1, talent 4
-  check('a famous name pulls the crowd harder than an unknown one',
-    famous.appeal.crowd > unknown.appeal.crowd);
-  check('while the critics count talent, so the gap there is far smaller',
-    famous.appeal.critics - unknown.appeal.critics < famous.appeal.crowd - unknown.appeal.crowd,
-    `critics gap ${famous.appeal.critics - unknown.appeal.critics}, crowd gap ${famous.appeal.crowd - unknown.appeal.crowd}`);
+  // Fame and talent must be separable currencies, or the phase has one axis
+  // wearing two names. Proved by holding everything else equal: same line, same
+  // part, same fit, so only the one figure under test differs.
+
+  // Equal talent, differing fame. Vestris 5/5 and Kean 5/4, both leading men
+  // squarely in their line as the Tragedian.
+  const morefamous = appraiseCasting(hamlet, { 0: 'vestris' });
+  const lessfamous = appraiseCasting(hamlet, { 0: 'kean' });
+  check('fame moves the crowd',
+    morefamous.appeal.crowd > lessfamous.appeal.crowd,
+    `${morefamous.appeal.crowd} vs ${lessfamous.appeal.crowd}`);
+  check('and fame alone leaves the critics entirely unmoved',
+    morefamous.appeal.critics === lessfamous.appeal.critics,
+    `${morefamous.appeal.critics} vs ${lessfamous.appeal.critics}`);
+
+  // Equal fame, differing talent. Bone 4/1 and Pike 3/1, both character men
+  // squarely in their line as the Ghost.
+  const abler = appraiseCasting(hamlet, { 2: 'bone' });
+  const lesser = appraiseCasting(hamlet, { 2: 'pike' });
+  check('talent moves the critics',
+    abler.appeal.critics > lesser.appeal.critics,
+    `${abler.appeal.critics} vs ${lesser.appeal.critics}`);
+  check('and talent alone does nothing at all for the crowd',
+    abler.appeal.crowd === lesser.appeal.crowd,
+    `${abler.appeal.crowd} vs ${lesser.appeal.crowd}`);
 }
 
 // --- feuds -------------------------------------------------------------------
 
 {
-  const oneProud = appraiseCasting(hamlet, { 0: 'kean', 1: 'fenwick', 2: 'bone', 3: 'grimaldi' });
-  const twoProud = appraiseCasting(hamlet, { 0: 'kean', 1: 'marr', 2: 'vane', 3: 'grimaldi' });
+  // Vestris and Crewe are vain; Siddons is temperamental; the rest are not proud.
+  const oneProud = appraiseCasting(hamlet, { 0: 'vestris', 1: 'fenwick', 2: 'pike', 3: 'grimaldi' });
+  const twoProud = appraiseCasting(hamlet, { 0: 'vestris', 1: 'fenwick', 2: 'vane', 3: 'grimaldi' });
   check('one proud performer starts no quarrel',
     oneProud.seeds.every((s) => s.kind !== 'feud'));
   check('two proud performers will not share a curtain call',
     twoProud.seeds.some((s) => s.kind === 'feud'));
 
-  const threeProud = appraiseCasting(hamlet, { 0: 'siddons', 1: 'marr', 2: 'vane', 3: 'grimaldi' });
+  const threeProud = appraiseCasting(hamlet, { 0: 'siddons', 1: 'crewe', 2: 'vane', 3: 'grimaldi' });
   check('three of them is three quarrels, not one and a half',
     threeProud.volatility > twoProud.volatility,
     `${threeProud.volatility} vs ${twoProud.volatility}`);
@@ -147,12 +175,17 @@ check('everyone else still is',
 
 check('every performer has a temperament the game knows',
   PERFORMERS.every((p) => TEMPERAMENTS[p.temperament]));
-check('every performer has a discipline a treatment might demand',
-  PERFORMERS.every((p) => ['Actor', 'Singer', 'Dancer'].includes(p.discipline)));
+check('every performer is engaged in a line the game knows',
+  PERFORMERS.every((p) => LINES.includes(p.line)));
+check('every part belongs to a line',
+  WORKS.flatMap((w) => w.roles).every((role) => ROLE_LINES[role]));
+check('adjacency is mutual, so courtesy runs both ways',
+  Object.entries(ADJACENT).filter(([line]) => line !== 'Utility')
+    .every(([line, others]) => others.every((other) => ADJACENT[other].includes(line))));
 check('performer ids are unique',
   new Set(PERFORMERS.map((p) => p.id)).size === PERFORMERS.length);
-check('the roster spans all three disciplines',
-  new Set(PERFORMERS.map((p) => p.discipline)).size === 3);
+check('the roster covers every line, so no part is unfillable in principle',
+  LINES.every((line) => PERFORMERS.some((p) => p.line === line && !p.imposed)));
 check('somebody cheap exists, so a broke impresario can still open',
   PERFORMERS.some((p) => p.salary <= 10 && !p.imposed));
 
@@ -173,7 +206,7 @@ check('somebody cheap exists, so a broke impresario can still open',
     }
     if (!ok) uncastable.push(`${work.id}/${treatment.id}`);
   }
-  check('every work can be cast under every treatment without miscasting',
+  check('every work can be cast under every treatment without going out of line',
     uncastable.length === 0, uncastable.join(', '));
 }
 

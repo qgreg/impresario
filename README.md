@@ -14,7 +14,7 @@ The impresario's real genius was combinatorial — Diaghilev's contribution was
 putting Nijinsky with Stravinsky with Picasso in one room. So the game is about
 combination, not selection. You *assemble* a show:
 
-> **Hamlet, as a Ballet, with a Live Horse**
+> **Macbeth, as a Melodrama, with a Live Horse**
 
 Three axes multiply freely. Most pairings are merely odd, a few are
 catastrophic, and a few are accidentally brilliant. Nobody tells you which in
@@ -57,10 +57,21 @@ games go to die.
 
 ### The company
 
-Casting asks one question the bill cannot: *who can carry **this**?* A ballet
-wants dancers whoever wrote the play, so a magnificent singer is simply wrong
-for the part — allowed, but priced. Casting against type is never forbidden,
-because sometimes it is the right price.
+Casting asks one question the bill cannot: *who can carry **this**?*
+
+A nineteenth-century company engaged an actor in a **line of business** —
+leading, juvenile, heavy, low comedy, character — and an actor asked to play
+outside it would refuse, and be within their rights to. It was a matter of
+contract and of professional dignity, not of ability.
+
+That is what casting runs on. Adjacent lines stretch to cover one another as a
+courtesy: a heavy will take a lead at a push. Nobody in the leading line will
+play low comedy, and asking is an insult. None of it is forbidden — it is
+priced, and the price is resentment as well as money.
+
+Utility is the safety valve. A utility player is never ideal and never out of
+their line, because doing anything adequately *is* the line — so a bill can
+always be filled, however badly the casting has gone.
 
 The people who can actually do it are vain, drunk, or both, and the steady ones
 are nobody the public has heard of. **Fame and talent are separate currencies**:

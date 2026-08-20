@@ -373,9 +373,10 @@ function paintCasting(casting) {
     const tags = [
       { kind: 'critics', text: `talent ${performer.talent}` },
       { kind: 'crowd', text: `fame ${performer.fame}` },
+      { kind: 'quiet', text: performer.line.toLowerCase() },
     ];
-    if (fit.level === 'ideal') tags.push({ kind: 'society', text: 'born to it' });
-    if (fit.level === 'wrong') tags.push({ kind: 'risk', text: 'wrong discipline' });
+    if (fit.level === 'ideal') tags.push({ kind: 'society', text: 'in their line' });
+    if (fit.level === 'wrong') tags.push({ kind: 'risk', text: 'out of their line' });
     if (performer.temperament !== 'steady') {
       tags.push({ kind: 'risk', text: TEMPERAMENT_WORDS[performer.temperament] });
     }

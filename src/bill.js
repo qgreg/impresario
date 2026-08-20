@@ -8,7 +8,7 @@
  * every guarantee it can borrow from the phases around it.
  */
 
-import { REMARKS } from './data.js';
+import { REMARKS, ROLE_LINES } from './data.js';
 
 export const AUDIENCES = ['crowd', 'society', 'critics'];
 
@@ -46,18 +46,42 @@ export function volatilityOf(work, treatment, hook) {
 }
 
 /**
- * A treatment can change what kind of performer a role needs — a ballet wants
- * dancers whoever wrote the play. The role's dramatic function is kept and its
- * discipline is replaced, so casting still knows it is filling the lead.
+ * A treatment reshapes the cast list as well as the tone.
+ *
+ * Playing it as a farce needs a second comic to go through the extra doors;
+ * restoring the full text brings back parts that were cut for good reason; and
+ * cutting to ninety minutes loses somebody entirely, which is cheaper and is
+ * exactly the sort of economy a critic will notice.
+ *
+ * At least two parts always survive a cut. A one-hander is a different art form
+ * and not one this game knows how to cast.
  */
+export const FEWEST_ROLES = 2;
+
 export function rolesOf(work, treatment) {
   if (!work) return [];
-  return work.roles.map((role) => ({
-    role,
-    discipline: treatment?.discipline ?? null,
-    label: treatment?.discipline ? `${role} (${treatment.discipline})` : role,
-  }));
+
+  let roles = [...work.roles];
+  const cuts = treatment?.cuts ?? 0;
+  if (cuts > 0) roles = roles.slice(0, Math.max(FEWEST_ROLES, roles.length - cuts));
+  if (treatment?.adds) roles.push(treatment.adds);
+
+  // A treatment that adds a part can duplicate one the work already had — a
+  // melodrama gives Macbeth a second villain. Two slots labelled identically are
+  // unreadable in the cast strip, so repeats are numbered.
+  const seen = new Map();
+  return roles.map((role) => {
+    const count = (seen.get(role) ?? 0) + 1;
+    seen.set(role, count);
+    return {
+      role,
+      line: ROLE_LINES[role] ?? 'Utility',
+      label: count === 1 ? role : `${ORDINALS[count] ?? `${count}th`} ${role}`,
+    };
+  });
 }
+
+const ORDINALS = { 2: 'Second', 3: 'Third', 4: 'Fourth', 5: 'Fifth' };
 
 /**
  * The line on the poster. This is the sentence the player repeats to somebody

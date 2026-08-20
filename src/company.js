@@ -2,45 +2,49 @@
  * The Company: filling the roles the bill demanded.
  *
  * The question this phase asks is not "who is best" — it is "who can carry
- * *this*", and the bill has already made that hard. A ballet wants dancers
- * whoever wrote the play; a backer who covered your shortfall wants his niece
- * in a part she cannot play; and the two finest performers in England will not
- * share a curtain call.
+ * *this*", and the bill has already made that hard. A melodrama wants a villain
+ * to hiss whoever wrote the play; a backer who covered your shortfall wants his
+ * niece in a part she cannot play; and the two finest performers in England will
+ * not share a curtain call.
  *
  * Pure functions over plain data, like the bill. Nothing here needs a browser.
  */
 
-import { PERFORMERS } from './data.js';
+import { PERFORMERS, ROLE_LINES, ADJACENT } from './data.js';
 
 /**
- * How well a performer suits a slot.
+ * How well a performer suits a part, by line of business.
  *
- * Discipline dominates affinity, because a treatment's demand is physical: a
- * magnificent singer cast in a ballet still cannot dance. Casting against type
- * is never forbidden — it is priced, and sometimes it is the right price.
+ * A company engaged an actor in a line, and an actor asked to play outside it
+ * would refuse — not because they could not, but because it was beneath the
+ * terms they had agreed to. So casting out of line is never blocked here
+ * either; it is priced, and the price is resentment as much as money.
+ *
+ * Adjacent lines stretch to cover one another as a professional courtesy. A
+ * heavy will take a lead at a push. Nobody in the leading line will play low
+ * comedy, and asking is the insult the phase is built around.
  */
 export function fitFor(performer, slot) {
   if (!performer || !slot) return null;
 
-  const wrongDiscipline = !!slot.discipline && performer.discipline !== slot.discipline;
-  const suited = performer.roles.includes(slot.role);
+  const wanted = slot.line ?? ROLE_LINES[slot.role] ?? 'Utility';
 
-  if (wrongDiscipline) {
+  if (performer.line === wanted) {
+    return { level: 'ideal', why: 'Squarely in their line.', appeal: 2, volatility: 0 };
+  }
+  if ((ADJACENT[performer.line] ?? []).includes(wanted)) {
     return {
-      level: 'wrong',
-      why: `A ${performer.discipline.toLowerCase()} cannot carry a ${slot.discipline.toLowerCase()}'s part.`,
-      appeal: -3,
-      volatility: 3,
+      level: 'passable',
+      why: 'A stretch, but they will not disgrace it.',
+      appeal: 0,
+      volatility: 1,
     };
   }
-  if (suited) {
-    return { level: 'ideal', why: 'Born to it.', appeal: 2, volatility: 0 };
-  }
   return {
-    level: 'passable',
-    why: `Not their line, but they will not disgrace it.`,
-    appeal: 0,
-    volatility: 1,
+    level: 'wrong',
+    why: `A ${performer.line.toLowerCase()} will not thank you for a ${wanted.toLowerCase()} part.`,
+    appeal: -3,
+    volatility: 3,
   };
 }
 
@@ -94,7 +98,11 @@ export function appraiseCasting(bill, assigned = {}, { imposed = null } = {}) {
     volatility += fit.volatility;
 
     if (fit.level === 'wrong') {
-      seeds.push({ kind: 'miscast', who: performer.name, text: `${performer.name} is wrong for ${slot.role}.` });
+      seeds.push({
+        kind: 'miscast',
+        who: performer.name,
+        text: `${performer.name} is out of their line as ${slot.role}.`,
+      });
     }
 
     const temperament = TEMPERAMENTS[performer.temperament];

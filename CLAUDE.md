@@ -99,13 +99,24 @@ any hook. The game does not curate combinations — it comments on notable ones
 through `REMARKS` in `data.js`. Adding content means adding to a table, never
 adding a special case to `bill.js`.
 
+**Spoken theatre only.** No opera, no ballet, no chorus, no orchestra. An
+earlier draft had treatments that demanded singers or dancers; the game is
+narrower now and better for it. Do not reintroduce a musical or danced
+treatment, a singing role, or a performer whose skill is anything but acting.
+
+**Casting runs on lines of business, not ability.** `Leading`, `Juvenile`,
+`Heavy`, `Comedian`, `Character`, `Utility` — the lines a stock company actually
+engaged actors in. `ROLE_LINES` maps a part to the line entitled to play it and
+`ADJACENT` says which lines stretch to cover which, as a professional courtesy.
+Casting out of line is never blocked, only priced, and the price is resentment
+as much as money. `Utility` reaches every line and is ideal for none, which is
+what makes a bill always fillable.
+
 **Assert that a choice is never a dead end.** `company.test.js` checks every
-work can be cast under every treatment without miscasting — which caught opera
-and ballet being uncastable, because the roster held three singers and two
-dancers against treatments that demand four of a discipline. Two of the six
-treatments were traps sprung on a choice made blind in phase one. Scarcity of
-the right bodies is worth keeping, but as a money problem, never an
-impossibility.
+work can be cast under every treatment without anyone going out of their line.
+The earlier version of this caught opera and ballet being uncastable — two of
+six treatments were traps sprung on a choice made blind in phase one. Keep that
+check green whenever the roster or the works change.
 
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.
@@ -135,7 +146,7 @@ needs at least three roles. A treatment's `costMult` multiplies; a hook's `cost`
 is added afterwards, so an ambitious treatment on an expensive work compounds —
 which is how a season is lost.
 
-`billing` is the fragment that appears on the poster (`as a Ballet`, `with a
+`billing` is the fragment that appears on the poster (`as a Melodrama`, `with a
 Live Horse`). A hook with `billing: null` adds nothing to the line, which is how
 "No Hook" stays free and silent.
 

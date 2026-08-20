@@ -11,6 +11,7 @@
 import {
   costOf, appealOf, volatilityOf, rolesOf, titleOf,
   deriveBill, financing, gradeAppeal, gradeVolatility, AUDIENCES,
+  FEWEST_ROLES,
 } from '../src/bill.js';
 import { WORKS, TREATMENTS, HOOKS, BACKERS } from '../src/data.js';
 
@@ -27,8 +28,8 @@ const work = {
   roles: ['Tragedian', 'Ingénue'],
 };
 const treatment = {
-  id: 't', name: 'As a Ballet', billing: 'as a Ballet', costMult: 1.6, volatility: 2,
-  appeal: { crowd: 1, society: 4, critics: 2 }, discipline: 'Dancer',
+  id: 't', name: 'As a Melodrama', billing: 'as a Melodrama', costMult: 1.6, volatility: 2,
+  appeal: { crowd: 1, society: 4, critics: 2 }, adds: 'Villain',
 };
 const hook = {
   id: 'h', name: 'A Live Horse', billing: 'with a Live Horse', cost: 15, volatility: 3,
@@ -66,23 +67,57 @@ check('the sensible bill is the calm one', volatilityOf(work, null, null) === 1)
 // --- roles ------------------------------------------------------------------
 
 {
-  const roles = rolesOf(work, treatment);
-  check('a treatment restates every role in its own discipline',
-    roles.length === 2 && roles.every((r) => r.discipline === 'Dancer'));
-  check('and keeps the dramatic function of the role',
-    roles[0].role === 'Tragedian' && roles[0].label === 'Tragedian (Dancer)');
+  const plain = rolesOf(work, null);
+  check('a work on its own hands over exactly its own parts',
+    plain.length === 2 && plain[0].role === 'Tragedian');
+  check('and every part knows which line of business it belongs to',
+    plain[0].line === 'Leading' && plain[1].line === 'Juvenile');
 }
-check('a treatment with no discipline leaves the roles alone',
-  rolesOf(work, { ...treatment, discipline: null })[0].label === 'Tragedian');
+
+{
+  // A treatment reshapes the cast list, not only the tone: a melodrama needs a
+  // villain to hiss whoever wrote the play.
+  const added = rolesOf(work, treatment);
+  check('a treatment that adds a part lengthens the cast list',
+    added.length === 3 && added[2].role === 'Villain');
+  check('and the added part carries its line like any other',
+    added[2].line === 'Heavy');
+}
+
+{
+  const cut = rolesOf({ ...work, roles: ['Tragedian', 'Ingénue', 'Comic', 'Ghost'] }, { cuts: 1 });
+  check('cutting to ninety minutes loses somebody entirely', cut.length === 3);
+
+  // The floor matters: a treatment must never cut a bill down to a monologue,
+  // which is a different art form and not one this game knows how to cast.
+  const floored = rolesOf({ ...work, roles: ['Tragedian', 'Ingénue'] }, { cuts: 3 });
+  check('but a cut can never leave fewer parts than the game can cast',
+    floored.length === FEWEST_ROLES, `${floored.length}`);
+}
+
+{
+  // A treatment can add a part the work already had. Identical labels in the
+  // cast strip are unreadable, so the repeat is numbered.
+  const doubled = rolesOf({ ...work, roles: ['Tragedian', 'Villain'] }, { adds: 'Villain' });
+  check('a repeated part is numbered rather than duplicated',
+    doubled[1].label === 'Villain' && doubled[2].label === 'Second Villain',
+    doubled.map((r) => r.label).join(' | '));
+  check('and both still know they are the same kind of part',
+    doubled[1].role === 'Villain' && doubled[2].role === 'Villain' &&
+    doubled[1].line === doubled[2].line);
+}
+
+check('an unknown part still gets a line rather than crashing',
+  rolesOf({ ...work, roles: ['Sword Swallower'] }, null)[0].line === 'Utility');
 check('no work means no roles to fill', rolesOf(null, treatment).length === 0);
 
 // --- billing ----------------------------------------------------------------
 
 check('the poster reads as billing matter',
-  titleOf(work, treatment, hook) === 'Hamlet, as a Ballet, with a Live Horse',
+  titleOf(work, treatment, hook) === 'Hamlet, as a Melodrama, with a Live Horse',
   titleOf(work, treatment, hook));
 check('a hook that is no hook adds nothing to the billing',
-  titleOf(work, treatment, { ...hook, billing: null }) === 'Hamlet, as a Ballet');
+  titleOf(work, treatment, { ...hook, billing: null }) === 'Hamlet, as a Melodrama');
 check('the work alone is billed without punctuation', titleOf(work, null, null) === 'Hamlet');
 
 // --- the derived bill -------------------------------------------------------
@@ -91,7 +126,8 @@ check('the work alone is billed without punctuation', titleOf(work, null, null) 
   const bill = deriveBill({ work, treatment, hook });
   check('a bill with all three parts is complete', bill.complete);
   check('and carries everything the later phases need',
-    bill.cost === 79 && bill.volatility === 6 && bill.roles.length === 2);
+    bill.cost === 79 && bill.volatility === 6 && bill.roles.length === 3,
+    `${bill.cost}g, volatility ${bill.volatility}, ${bill.roles.length} parts`);
 }
 check('a bill missing its hook is not yet complete',
   !deriveBill({ work, treatment }).complete);
