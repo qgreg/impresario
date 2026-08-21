@@ -279,6 +279,30 @@ the larger half of the outlay, so the gap that strands a player shows up at
 casting, not at the bill. Backers are offered at the bill *and* at the last
 screen before the house opens.
 
+**The prose belongs in the comments, not on the screen.** This codebase
+documents its decisions at length and that is right; a phone screen the player
+scans and taps is the opposite problem. The casting screen once ran to **425
+words to make one tap** — a paperback page, where a mobile screen wants forty.
+
+Three rules came out of fixing it, and they are cheap to keep:
+
+- *Flavour is clamped to one line* (`.card__note`), dimmer and smaller, so the
+  eye lands on the name and the marks first. No text was rewritten; it is simply
+  no longer the first thing read. Cards whose text **is** the content — the
+  impresarios, the fate, the books, any message rather than an option — carry
+  `roomy: true` and say everything.
+- *Decision information is marks, not words.* `●+6 ◆+2 ▲−2` rather than
+  "The Crowd +6, Society +2, The Critics −2"; a ✓ or ✗ for fit rather than "in
+  their line". The meters name the audiences against the same glyphs directly
+  above, so a mark is learned once. Every mark carries a `title`, and the plain
+  wording survives in the slot strip and the seeds.
+- *A list the player scans is capped at six*, ordered by fit, with the rest one
+  tap away rather than hidden.
+
+Measuring this needs care: `innerText` returns clamped text that is not on
+screen, so it reports no improvement at all. Measure rendered height, or scale
+each note's words by `clientHeight / scrollHeight`.
+
 **Appeal is never clamped.** A bill can be genuinely repellent to an audience,
 and a negative number is more honest and more useful than a floor at zero.
 

@@ -78,6 +78,7 @@ const state = {
   choice: { work: null, treatment: null, hook: null },
   backer: null,
   assigned: {},   // roleIndex -> performerId
+  wholeCompany: false,   // whether casting is showing everyone or the short list
   production: { staging: null, preparation: null },
   night: null,
   running: null,      // the live performance, while the curtain is up
@@ -232,9 +233,18 @@ function paintBill(bill, casting, production) {
 }
 
 /** One tappable option. Everything the player needs to decide is on the face. */
-function card(text, { cost, note, tags = [], className = '', onSelect }) {
+/**
+ * A card.
+ *
+ * `roomy` lets the note run to several lines. Everywhere else it is clamped to
+ * one: on a screen the player scans and taps, a full sentence of flavour on
+ * every card is a wall, and the casting screen was reaching four hundred words
+ * to make a single tap. The words are all still there — they are simply no
+ * longer the first thing the eye lands on.
+ */
+function card(text, { cost, note, tags = [], className = '', roomy = false, onSelect }) {
   const button = document.createElement('button');
-  button.className = `card ${className}`.trim();
+  button.className = `card ${className}${roomy ? ' card--roomy' : ''}`.trim();
   button.type = 'button';
 
   const top = document.createElement('div');
@@ -263,6 +273,8 @@ function card(text, { cost, note, tags = [], className = '', onSelect }) {
       const span = document.createElement('span');
       span.className = `tag tag--${tag.kind}`;
       span.textContent = tag.text;
+      // A mark still has to be able to say what it means to anyone who asks.
+      if (tag.title) span.title = tag.title;
       row.appendChild(span);
     }
     button.appendChild(row);
@@ -503,14 +515,24 @@ function paintCasting(casting) {
       b.performer.talent - a.performer.talent ||
       a.performer.salary - b.performer.salary);
 
-  for (const { performer, fit } of offered) {
+  // Sixteen performers on one screen was four hundred words to make one tap.
+  // Six is enough: the list is already ordered by fit, so the six shown are the
+  // ones actually worth considering for this part, and the rest are one tap away
+  // rather than hidden — a bargain further down should still be findable.
+  const SHORTLIST = 6;
+  const shown = state.wholeCompany ? offered : offered.slice(0, SHORTLIST);
+
+  for (const { performer, fit } of shown) {
     const tags = [
       { kind: 'critics', text: `talent ${performer.talent}` },
       { kind: 'crowd', text: `fame ${performer.fame}` },
       { kind: 'quiet', text: performer.line.toLowerCase() },
     ];
-    if (fit.level === 'ideal') tags.push({ kind: 'society', text: 'in their line' });
-    if (fit.level === 'wrong') tags.push({ kind: 'risk', text: 'out of their line' });
+    // Fit was three words on every card in a list of sixteen. It is a tick or a
+    // cross now, with the plain wording kept on the slot strip and in the seeds,
+    // so the meaning is still stated somewhere in words.
+    if (fit.level === 'ideal') tags.push({ kind: 'fit', text: '✓', title: 'in their line' });
+    if (fit.level === 'wrong') tags.push({ kind: 'risk', text: '✗', title: 'out of their line' });
     if (performer.temperament !== 'steady') {
       tags.push({ kind: 'risk', text: TEMPERAMENT_WORDS[performer.temperament] });
     }
@@ -521,6 +543,14 @@ function paintCasting(casting) {
       tags,
       className: fit.level === 'wrong' ? 'card--quiet' : '',
       onSelect: () => assign(active.index, performer.id),
+    }));
+  }
+
+  if (!state.wholeCompany && offered.length > shown.length) {
+    el.cards.appendChild(card(`The rest of the company`, {
+      cost: `${offered.length - shown.length} more`,
+      className: 'card--quiet',
+      onSelect: () => { sfx.tap(); state.wholeCompany = true; render(); },
     }));
   }
 
@@ -548,10 +578,11 @@ function productionCard(part, casting, onSelect) {
   for (const audience of AUDIENCES) {
     const value = part.appeal?.[audience] ?? 0;
     if (value !== 0) {
-      // Glyph as well as colour, matching the readout — the tag must still say
-      // which audience it means when the colour cannot be told apart.
-      const { glyph, name } = AUDIENCE_LABELS[audience];
-      tags.push({ kind: audience, text: `${glyph} ${name} ${value > 0 ? '+' : ''}${value}` });
+      // Glyph and figure, no words. The meters directly above name all three
+      // audiences against the same glyphs, so the mark is learned in one look
+      // and then costs nothing to read for the rest of the season.
+      const { glyph } = AUDIENCE_LABELS[audience];
+      tags.push({ kind: audience, text: `${glyph}${value > 0 ? '+' : ''}${value}` });
     }
   }
   if (part.volatility !== 0) {
@@ -612,6 +643,7 @@ function paintReady(bill, casting, production) {
     el.cards.appendChild(card('You cannot pay for all this', {
       note: `${outlay}g promised and ${funds()}g in hand. Give somebody up, or stage it more cheaply.`,
       className: 'card--quiet',
+      roomy: true,
       onSelect: () => {},
     }));
 
@@ -685,6 +717,7 @@ function paintOpen(bill, casting, production) {
     {
       cost: `${result.takings}g taken`,
       note: `${wentWrong} ${result.outlay}g went out, ${result.takings}g came back.`,
+      roomy: true,
       className: result.profit >= 0 ? 'card--mount' : 'card--quiet',
       tags: [{
         kind: result.standing >= 0 ? 'quiet' : 'risk',
@@ -770,6 +803,8 @@ function paintImpresarios() {
       cost: person.epithet,
       note: person.blurb,
       tags,
+      // Chosen once a season, and the blurb is the whole basis of the choice.
+      roomy: true,
       onSelect: () => { sfx.tap(); chooseImpresario(person); },
     }));
   }
@@ -822,6 +857,7 @@ function appendRuin() {
   el.cards.appendChild(card(fate.headline, {
     note: fate.text,
     className: 'card--quiet',
+    roomy: true,
     onSelect: () => {},
   }));
 
@@ -829,6 +865,7 @@ function appendRuin() {
     cost: `${state.capital}g left`,
     note: `The cheapest evening in London runs to ${RUIN_FLOOR}g. You lasted ${state.week} week${state.week === 1 ? '' : 's'} as ${state.impresario?.name ?? 'an impresario'}, and finished ${gradeStanding(state.reputation)}.`,
     className: 'card--quiet',
+    roomy: true,
     onSelect: () => {},
   }));
 
@@ -855,6 +892,7 @@ function beginSeason() {
   state.spentBackers = [];
   state.choice = { work: null, treatment: null, hook: null };
   state.assigned = {};
+  state.wholeCompany = false;
   state.production = { staging: null, preparation: null };
   state.result = null;
   state.night = null;
@@ -895,6 +933,9 @@ function mount() {
 
 function assign(index, performerId) {
   state.assigned[index] = performerId;
+  // Each part starts from the short list again: whoever suits the Ghost is a
+  // different six from whoever suits the Tragedian.
+  state.wholeCompany = false;
   render();
 }
 
@@ -1019,6 +1060,7 @@ function reset() {
   state.choice = { work: null, treatment: null, hook: null };
   state.backer = null;
   state.assigned = {};
+  state.wholeCompany = false;
   state.production = { staging: null, preparation: null };
   state.result = null;
   state.night = null;

@@ -607,3 +607,41 @@ body {
   .curtain__card { transition-duration: 1ms; }
   .curtain__button { animation: none; box-shadow: 0 0 18px rgba(232, 163, 61, 0.3); }
 }
+
+/* ------------------------------------------------- letting the eye land first */
+
+/*
+ * The flavour note is clamped to a single line everywhere the player is
+ * scanning a list and tapping one of them. Nothing is rewritten and nothing is
+ * lost — it is simply no longer the first thing the eye meets. The casting
+ * screen was running to four hundred words to make one tap, which is a page of
+ * a paperback, and a phone screen wants nearer forty.
+ *
+ * Cards whose text *is* the content — the impresarios, the fate, the books,
+ * anything that is a message rather than an option — carry .card--roomy and say
+ * everything.
+ */
+.card__note {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+
+.card--roomy .card__note {
+  display: block;
+  overflow: visible;
+  font-size: 0.9rem;
+  opacity: 1;
+}
+
+/* Marks rather than words: a glyph and a figure, no label. The meters name all
+   three audiences against the same glyphs directly above, so it is learned once
+   and free to read thereafter. */
+.card__tags { font-variant-numeric: tabular-nums; }
+/* Fit is a tick or a cross, and it must not borrow an audience's colour — a
+   purple tick reads as a mark about Society rather than about the casting. */
+.tag--fit { color: var(--safe); font-weight: 700; }
+.tag--risk { font-weight: 700; }
