@@ -205,6 +205,28 @@ stage manager from `speechSynthesis`, which every browser already carries.
 is called from the curtain button — the first press the page ever receives.
 Building an `AudioContext` before that leaves it suspended.
 
+**Three iOS traps, all of them silent failures.** Every one of these produces no
+error and nothing to see, and the headless tests could not have caught any of
+them — they counted `createOscillator()` calls, which proves the code path ran,
+not that a sound was audible.
+
+1. *Resuming is asynchronous and a suspended context reports a frozen clock.*
+   Anything scheduled between the gesture and the resume lands in the past and is
+   dropped rather than played late. `wake()` returns a promise and the first
+   sound waits for it; every event also carries a `LOOKAHEAD`.
+2. *Web Audio obeys the iPhone's physical mute switch* unless the page declares
+   `navigator.audioSession.type = 'playback'` (iOS 16.4+). Phones live on
+   silent, so without this the whole pit is inaudible on the device this is
+   mostly played on.
+3. *Speech has a separate lock.* iOS only speaks if `speak()` has been called
+   once inside a user gesture, and the stage manager's first real cue arrives
+   mid-performance. A silent utterance is spoken from the curtain button to buy
+   him a voice for the session.
+
+**A control must not lie about itself.** If `wake()` cannot get a context, the
+sound preference is set to off and repainted, rather than continuing to display
+"on" over silence.
+
 **Play a one-shot from the transition, not from the paint.** `render` runs as
 often as it likes. The trombone sounds from `ruin()`, the reception from
 `applaud()` at the moment the night resolves, and the fate is drawn in `ruin()`

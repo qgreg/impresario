@@ -21,6 +21,15 @@ let ctx = null;
 let master = null;
 let enabled = readPreference();
 
+/**
+ * Never schedule an event at exactly `currentTime`.
+ *
+ * A context that has only just been resumed can report a clock a few
+ * milliseconds behind where it will be by the time the event is due, and an
+ * event scheduled in the past is silently dropped rather than played late.
+ */
+const LOOKAHEAD = 0.04;
+
 /** Browsers refuse audio until a gesture, so the context is built on first use. */
 function audio() {
   if (!enabled) return null;
@@ -32,6 +41,7 @@ function audio() {
       master = ctx.createGain();
       master.gain.value = 0.28;   // a pit, not a rock concert
       master.connect(ctx.destination);
+      claimTheSpeaker();
     } catch {
       return null;
     }
@@ -40,9 +50,55 @@ function audio() {
   return ctx;
 }
 
-/** Called from the first real gesture — the curtain button — to unlock audio. */
+/**
+ * Tell iOS this page is playing back audio, not ringing a bell.
+ *
+ * Web Audio on an iPhone obeys the physical mute switch unless the page has
+ * declared a playback session, and phones live on silent. Without this the
+ * entire pit is inaudible on the device most of this will be played on, with no
+ * error and nothing to see — which is exactly how it went unnoticed here.
+ *
+ * `navigator.audioSession` is iOS 16.4 and later, and absent everywhere else,
+ * so this is best-effort by design.
+ */
+function claimTheSpeaker() {
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
+  } catch { /* older iOS, and every other platform, simply do not need it */ }
+}
+
+/**
+ * Called from the first real gesture — the curtain button — to unlock audio.
+ *
+ * Resuming is asynchronous, and a suspended context reports a frozen clock: any
+ * note scheduled between the gesture and the resume lands in the past and is
+ * dropped. So this hands back a promise, and the first sound waits for it.
+ */
 export function wake() {
-  audio();
+  const c = audio();
+  if (!c) return Promise.resolve(false);
+  primeTheStageManager();
+  if (c.state === 'running') return Promise.resolve(true);
+  return c.resume().then(() => true).catch(() => false);
+}
+
+/**
+ * Speech has its own lock, and it is not the same lock.
+ *
+ * iOS will only speak if `speak()` has been called once inside a user gesture.
+ * The stage manager's first real cue arrives in the middle of a performance,
+ * which is not a gesture — so on an iPhone he would never have said a word. One
+ * silent utterance from the curtain button buys him a voice for the session.
+ */
+let primed = false;
+function primeTheStageManager() {
+  if (primed || !('speechSynthesis' in window)) return;
+  primed = true;
+  try {
+    const silence = new SpeechSynthesisUtterance('');
+    silence.volume = 0;
+    window.speechSynthesis.speak(silence);
+  } catch { /* a silent stage manager is still a stage manager */ }
 }
 
 function readPreference() {
@@ -81,7 +137,7 @@ export function setEnabled(on) {
 function note(freq, at, length, { type = 'triangle', gain = 0.5, slide = null } = {}) {
   const c = audio();
   if (!c) return;
-  const t0 = c.currentTime + at;
+  const t0 = c.currentTime + LOOKAHEAD + at;
 
   const osc = c.createOscillator();
   const amp = c.createGain();
@@ -102,7 +158,7 @@ function note(freq, at, length, { type = 'triangle', gain = 0.5, slide = null } 
 function noise(at, length, { frequency = 1200, q = 0.7, gain = 0.4 } = {}) {
   const c = audio();
   if (!c) return;
-  const t0 = c.currentTime + at;
+  const t0 = c.currentTime + LOOKAHEAD + at;
 
   const frames = Math.floor(c.sampleRate * length);
   const buffer = c.createBuffer(1, Math.max(1, frames), c.sampleRate);

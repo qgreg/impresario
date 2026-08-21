@@ -1070,10 +1070,12 @@ function paintSound() {
 }
 
 function toggleSound() {
-  setEnabled(!isEnabled());
+  const on = setEnabled(!isEnabled());
   paintSound();
-  // A confirmation you can hear is the only honest way to test a sound control.
-  if (isEnabled()) sfx.cue();
+  // A confirmation you can hear is the only honest way to test a sound control,
+  // and switching it off and on again is how somebody hearing nothing will try
+  // to find out whether the fault is theirs or ours.
+  if (on) wake().then((awake) => { if (awake) sfx.cue(); });
 }
 
 el.sound.addEventListener('click', toggleSound);
@@ -1081,10 +1083,21 @@ el.mute.addEventListener('click', toggleSound);
 paintSound();
 
 function raiseTheCurtain() {
-  // The button press is the gesture browsers demand before any audio at all,
-  // so the context is built here and nowhere else.
-  wake();
-  sfx.curtain();
+  // The button press is the gesture browsers demand before any audio at all, so
+  // the context is built here and nowhere else — and the first sound waits for
+  // the resume to finish, because a suspended context reports a frozen clock and
+  // anything scheduled against it is dropped rather than played late.
+  wake().then((awake) => {
+    if (awake) {
+      sfx.curtain();
+    } else {
+      // The browser refused to give us a context at all. Saying "on" at that
+      // point is a lie, and a control that lies about itself is worse than one
+      // that is simply unavailable.
+      setEnabled(false);
+      paintSound();
+    }
+  });
   el.curtain.classList.add('curtain--open');
   el.begin.disabled = true;
   // Taken out of the layout once it has finished parting, so nothing invisible
