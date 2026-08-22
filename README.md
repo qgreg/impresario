@@ -4,9 +4,35 @@ A mobile web game about mounting a season of theatre you cannot afford.
 
 You are not an actor and you are not a director. You are the person who puts up
 the money, books the house, hires the star, and stands at the back on opening
-night watching it happen. Historically that person went bankrupt quite often.
+night watching it happen. Historically that person went bankrupt quite often. So
+does the modern one.
 
 No build step, no dependencies, no install. Open the page.
+
+## The setting is a costume
+
+None of the considerations in this game are historical. Walk the mechanics
+without the guineas:
+
+- **The Bill** — commit to a direction before you know who you can get.
+- **The Company** — the people who can actually do it are vain, unreliable or
+  unknown, and fame and talent are different currencies that buy different
+  rooms.
+- **The three audiences** — the crowd fills the seats, society pays for the
+  boxes, the critics pay nothing and decide your reputation. Users, capital,
+  press. That is not an analogy; it is the same structure.
+- **The backer's string** — take the money, take the condition.
+- **The Production** — you now know what you have actually got. Spend to hide
+  the weakness, or go bare and let it show.
+- **Opening night** — no retakes.
+- **Ruin** — nobody funds the third failure.
+
+The only thing here that is 1880 is the currency.
+
+The distance is deliberate and it earns its keep twice. A structure is easier to
+see when it is not your own week. And the period is the one choice that cannot
+date: a game about founding a company in 2026 is embarrassing by 2029, while
+1880 has already finished happening.
 
 ## The idea
 

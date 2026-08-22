@@ -109,6 +109,14 @@ any hook. The game does not curate combinations — it comments on notable ones
 through `REMARKS` in `data.js`. Adding content means adding to a table, never
 adding a special case to `bill.js`.
 
+**The period is a costume, not the subject.** None of the mechanics are
+historical — committing before you know who you can get, three audiences wanting
+incompatible things, money that arrives with a condition attached, no retakes,
+nobody funding the third failure. The setting exists because distance makes a
+structure legible and because 1880 cannot date. Keep the fiction pure *inside*
+the game and make the claim outside it, in the README. Do not add knowing modern
+winks to the copy; that would cost the distance and buy nothing.
+
 **Spoken theatre only.** No opera, no ballet, no chorus, no orchestra. An
 earlier draft had treatments that demanded singers or dancers; the game is
 narrower now and better for it. Do not reintroduce a musical or danced
